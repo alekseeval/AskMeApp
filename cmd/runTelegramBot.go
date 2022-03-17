@@ -1,14 +1,14 @@
 package main
 
 import (
-	"AskMeApp/telegram_bot"
+	"AskMeApp/internal"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"os"
 )
 
 func main() {
-	botClient := telegram_bot.NewTelegramBotClient(os.Getenv("TELEGRAM_API_TOKEN"))
+	botClient := internal.NewTelegramBotClient(os.Getenv("TELEGRAM_API_TOKEN"))
 
 	defaultText := "Андрей снова будет засыпать весь день, зато мы с ним научились новым приколам :)\n\n" +
 		"Напиши команду /start"
