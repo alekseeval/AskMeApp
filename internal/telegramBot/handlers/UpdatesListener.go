@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-func HandleBotMessages(botClient *telegramBot.BotClient, userRepo interfaces.UserRepository) {
+func HandleBotMessages(botClient *telegramBot.BotClient, userRepo interfaces.UserRepositoryInterface) {
 	for update := range botClient.Updates {
 
 		if update.Message != nil {
@@ -48,7 +48,7 @@ func HandleBotMessages(botClient *telegramBot.BotClient, userRepo interfaces.Use
 	}
 }
 
-func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository interfaces.UserRepository) (*model.User, error) {
+func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository interfaces.UserRepositoryInterface) (*model.User, error) {
 	user, err := repository.GetByChatId(tgChatId)
 	if err != nil {
 		return nil, err
