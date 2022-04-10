@@ -23,7 +23,7 @@ func NewBotClient(botToken string) (*BotClient, error) {
 	}, nil
 }
 
-func (c *BotClient) SendMessage(msgText string, chatId int64) error {
+func (c *BotClient) SendTextMessage(msgText string, chatId int64) error {
 	msg := TgBotApi.NewMessage(chatId, msgText)
 	_, err := c.Bot.Send(msg)
 	if err != nil {

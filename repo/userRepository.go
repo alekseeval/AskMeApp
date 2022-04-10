@@ -1,4 +1,4 @@
-package dbManager
+package repo
 
 //DbManager is structure for manage work with DB
 // TODO: реализовать основные методы из адаптера DbManagerInterface
