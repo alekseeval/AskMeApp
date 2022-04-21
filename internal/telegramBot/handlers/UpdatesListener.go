@@ -15,7 +15,7 @@ func HandleBotMessages(botClient *telegramBot.BotClient, userRepo interfaces.Use
 
 			user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, userRepo)
 			if err != nil {
-				err = botClient.SendTextMessage("Что-то пошло не так: \n"+err.Error(), update.Message.Chat.ID)
+				err = botClient.SendTextMessage("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
 				if err != nil {
 					log.Panic("Жопа наступила, не удалось получить или создать юзера,"+
 						" а потом еще и сообщение не отправилось", err)
@@ -62,7 +62,7 @@ func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository 
 		TgUserName: tgUserInfo.UserName,
 		TgChatId:   tgChatId,
 	}
-	err = repository.Add(user)
+	user, err = repository.Add(user)
 	if err != nil {
 		return nil, err
 	}
