@@ -9,3 +9,7 @@ type UserRepositoryInterface interface {
 	Edit(user *model.User) error
 	GetByChatId(telegramChatId int64) (*model.User, error)
 }
+
+// QuestionsRepositoryInterface is CRUD repository interface for model.Question
+type QuestionsRepositoryInterface interface {
+}
