@@ -17,5 +17,5 @@ type QuestionsRepositoryInterface interface {
 	Delete(question *model.Question) error
 	Edit(question *model.Question) error
 
-	GetByUser(user *model.User) (*model.Question, error)
+	GetByAuthor(user *model.User) (*model.Question, error)
 }

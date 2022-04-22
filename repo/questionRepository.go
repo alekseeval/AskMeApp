@@ -21,6 +21,6 @@ func (repo *QuestionRepository) Edit(question *model.Question) error {
 	return nil
 }
 
-func (repo *QuestionRepository) GetByUser(user *model.User) (*model.Question, error) {
+func (repo *QuestionRepository) GetByAuthor(user *model.User) (*model.Question, error) {
 	return nil, nil
 }
