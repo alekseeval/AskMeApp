@@ -4,7 +4,6 @@ import (
 	"AskMeApp/internal/model"
 	"database/sql"
 	"errors"
-	"fmt"
 	_ "github.com/lib/pq"
 	"log"
 )
@@ -14,18 +13,11 @@ type UserRepository struct {
 	db *sql.DB
 }
 
-func NewUserRepository(host string, port int, user string, password string, dbname string) (*UserRepository, error) {
-	psqlConnString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-	db, err := sql.Open("postgres", psqlConnString)
-	if err != nil {
-		return nil, err
-	}
+func NewUserRepository(db *sql.DB) *UserRepository {
 	repository := UserRepository{
 		db: db,
 	}
-	db.SetMaxIdleConns(5)
-	return &repository, nil
+	return &repository
 }
 
 func (repo *UserRepository) Add(user *model.User) (*model.User, error) {

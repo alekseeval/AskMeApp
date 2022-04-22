@@ -9,6 +9,8 @@ type QuestionRepository struct {
 	db *sql.DB
 }
 
+func NewQuestionRepository
+
 func (repo *QuestionRepository) Add(question *model.Question) (*model.Question, error) {
 	return nil, nil
 }
