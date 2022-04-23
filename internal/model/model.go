@@ -21,5 +21,5 @@ type Question struct {
 	Answer string `json:"answer"`
 
 	Category *Category `json:"category"`
-	AuthorId *User     `json:"authorId"`
+	Author   *User     `json:"authorId"`
 }
