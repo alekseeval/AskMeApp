@@ -14,10 +14,9 @@ type UserRepository struct {
 }
 
 func NewUserRepository(db *sql.DB) *UserRepository {
-	repository := UserRepository{
+	return &UserRepository{
 		db: db,
 	}
-	return &repository
 }
 
 func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
