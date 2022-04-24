@@ -20,12 +20,11 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
-	var userId int32
 	sqlStatement := `
 		INSERT INTO users (first_name, last_name)
 		VALUES ($1, $2)
 		RETURNING id`
-	err := repo.db.QueryRow(sqlStatement, user.FirstName, user.LastName).Scan(&userId)
+	err := repo.db.QueryRow(sqlStatement, user.FirstName, user.LastName).Scan(&user.Id)
 	if err != nil {
 		log.Println(51, err)
 		return nil, err
@@ -33,12 +32,11 @@ func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
 	sqlStatement = `
 		INSERT INTO telegram_users (username, chat_id, user_id)
 		VALUES ($1, $2, $3)`
-	_, err = repo.db.Exec(sqlStatement, user.TgUserName, user.TgChatId, userId)
+	_, err = repo.db.Exec(sqlStatement, user.TgUserName, user.TgChatId, user.Id)
 	if err != nil {
 		log.Println(59, err)
 		return nil, err
 	}
-	user.Id = userId
 	return user, nil
 }
 
