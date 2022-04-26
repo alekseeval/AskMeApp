@@ -151,3 +151,19 @@ func (repo *QuestionRepository) GetAll() ([]model.Question, error) {
 	}
 	return questions, nil
 }
+
+func (repo *QuestionRepository) AddCategory(category *model.Category) (*model.Category, error) {
+	return nil, nil
+}
+
+func (repo *QuestionRepository) DeleteCategory(category *model.Category) error {
+	return nil
+}
+
+func (repo *QuestionRepository) EditCategory(category *model.Category) error {
+	return nil
+}
+
+func (repo *QuestionRepository) GetAllCategory() ([]model.Category, error) {
+	return nil, nil
+}
