@@ -17,7 +17,7 @@ func NewQuestionRepository(db *sql.DB) *QuestionRepository {
 	}
 }
 
-func (repo *QuestionRepository) Add(question *model.Question) (*model.Question, error) {
+func (repo *QuestionRepository) AddQuestion(question *model.Question) (*model.Question, error) {
 	if question.Author.Id <= 0 {
 		return nil, errors.New("user is unregistered")
 	}
@@ -43,7 +43,7 @@ func (repo *QuestionRepository) Add(question *model.Question) (*model.Question, 
 	return question, nil
 }
 
-func (repo *QuestionRepository) Delete(question *model.Question) error {
+func (repo *QuestionRepository) DeleteQuestion(question *model.Question) error {
 	sqlStatement := `DELETE FROM questions2categories WHERE question_id=$1`
 	_, err := repo.db.Exec(sqlStatement, question.Id)
 	if err != nil {
@@ -64,7 +64,7 @@ func (repo *QuestionRepository) Delete(question *model.Question) error {
 	return nil
 }
 
-func (repo *QuestionRepository) Edit(question *model.Question) error {
+func (repo *QuestionRepository) EditQuestion(question *model.Question) error {
 	if question.Author.Id <= 0 {
 		return errors.New("user is unregistered")
 	}
@@ -100,7 +100,7 @@ func (repo *QuestionRepository) Edit(question *model.Question) error {
 
 // TODO: Пересмотреть смысл получения всех данных о пользователях и категориях
 //  или оптимизировать формирование сущностей без дублирования
-func (repo *QuestionRepository) GetAll() ([]model.Question, error) {
+func (repo *QuestionRepository) GetAllQuestions() ([]model.Question, error) {
 	sqlStatement := `
 			SELECT q.id, q.title, q.answer,
 			       category_id, qc.title category_title,
@@ -153,17 +153,54 @@ func (repo *QuestionRepository) GetAll() ([]model.Question, error) {
 }
 
 func (repo *QuestionRepository) AddCategory(category *model.Category) (*model.Category, error) {
-	return nil, nil
+	sqlStatement := `
+			INSERT INTO question_categories(title) 
+			VALUES ($1)
+			RETURNING id`
+	err := repo.db.QueryRow(sqlStatement, category.Title).Scan(&category.Id)
+	return category, err
 }
 
 func (repo *QuestionRepository) DeleteCategory(category *model.Category) error {
-	return nil
+	if category.Id <= 0 {
+		return errors.New("id field is not valid. Fail to delete category")
+	}
+	sqlStatement := `DELETE FROM question_categories WHERE id=$1`
+	_, err := repo.db.Exec(sqlStatement, category.Id)
+	return err
 }
 
 func (repo *QuestionRepository) EditCategory(category *model.Category) error {
-	return nil
+	if category.Id <= 0 {
+		return errors.New("id field is not valid. Fail to delete category")
+	}
+	sqlStatement := `
+			UPDATE question_categories
+			SET title=$1
+			WHERE id=$2`
+	_, err := repo.db.Exec(sqlStatement, category.Title, category.Id)
+	return err
 }
 
-func (repo *QuestionRepository) GetAllCategory() ([]model.Category, error) {
-	return nil, nil
+// TODO: Понять нужно ли возвращать Slice ссылок или просто слайс структур
+func (repo *QuestionRepository) GetAllCategories() ([]model.Category, error) {
+	categories := make([]model.Category, 0)
+	rows, err := repo.db.Query(`SELECT id, title FROM question_categories`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var id sql.NullInt32
+		var title sql.NullString
+		err = rows.Scan(&id, &title)
+		if err != nil {
+			return nil, err
+		}
+		c := model.Category{
+			Id:    id.Int32,
+			Title: title.String,
+		}
+		categories = append(categories, c)
+	}
+	return categories, nil
 }
