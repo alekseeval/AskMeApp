@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	_ "github.com/lib/pq"
-	"log"
 )
 
 // UserRepository is structure for manage work with DB
@@ -26,7 +25,6 @@ func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
 		RETURNING id`
 	err := repo.db.QueryRow(sqlStatement, user.FirstName, user.LastName).Scan(&user.Id)
 	if err != nil {
-		log.Println(51, err)
 		return nil, err
 	}
 	sqlStatement = `
@@ -34,7 +32,6 @@ func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
 		VALUES ($1, $2, $3)`
 	_, err = repo.db.Exec(sqlStatement, user.TgUserName, user.TgChatId, user.Id)
 	if err != nil {
-		log.Println(59, err)
 		return nil, err
 	}
 	return user, nil
