@@ -51,7 +51,7 @@ func HandleBotMessages(botClient *BotClient, userRepo interfaces.UserRepositoryI
 					log.Panic("Не удалось отправить сообщение", err)
 				}
 				botClient.Stop()
-				break
+				return
 			}
 		}
 	}
