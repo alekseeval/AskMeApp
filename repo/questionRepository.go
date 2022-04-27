@@ -100,7 +100,7 @@ func (repo *QuestionRepository) EditQuestion(question *model.Question) error {
 
 // TODO: Пересмотреть смысл получения всех данных о пользователях и категориях
 //  или оптимизировать формирование сущностей без дублирования
-func (repo *QuestionRepository) GetAllQuestions() ([]model.Question, error) {
+func (repo *QuestionRepository) GetAllQuestions() ([]*model.Question, error) {
 	sqlStatement := `
 			SELECT q.id, q.title, q.answer,
 			       category_id, qc.title category_title,
@@ -115,7 +115,7 @@ func (repo *QuestionRepository) GetAllQuestions() ([]model.Question, error) {
 	if err != nil {
 		return nil, err
 	}
-	questions := make([]model.Question, 0)
+	questions := make([]*model.Question, 0)
 	for rows.Next() {
 		var id sql.NullInt32
 		var title sql.NullString
@@ -147,7 +147,7 @@ func (repo *QuestionRepository) GetAllQuestions() ([]model.Question, error) {
 				TgUserName: authorTgUserName.String,
 			},
 		}
-		questions = append(questions, q)
+		questions = append(questions, &q)
 	}
 	return questions, nil
 }
@@ -183,8 +183,8 @@ func (repo *QuestionRepository) EditCategory(category *model.Category) error {
 }
 
 // TODO: Понять нужно ли возвращать Slice ссылок или просто слайс структур
-func (repo *QuestionRepository) GetAllCategories() ([]model.Category, error) {
-	categories := make([]model.Category, 0)
+func (repo *QuestionRepository) GetAllCategories() ([]*model.Category, error) {
+	categories := make([]*model.Category, 0)
 	rows, err := repo.db.Query(`SELECT id, title FROM question_categories`)
 	if err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func (repo *QuestionRepository) GetAllCategories() ([]model.Category, error) {
 			Id:    id.Int32,
 			Title: title.String,
 		}
-		categories = append(categories, c)
+		categories = append(categories, &c)
 	}
 	return categories, nil
 }

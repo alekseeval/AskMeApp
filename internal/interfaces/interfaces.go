@@ -16,7 +16,7 @@ type QuestionsRepositoryInterface interface {
 	AddQuestion(question *model.Question) (*model.Question, error)
 	DeleteQuestion(question *model.Question) error
 	EditQuestion(question *model.Question) error
-	GetAllQuestions() ([]model.Question, error)
+	GetAllQuestions() ([]*model.Question, error)
 
 	CategoriesRepositoryInterface
 }
@@ -27,5 +27,5 @@ type CategoriesRepositoryInterface interface {
 	DeleteCategory(category *model.Category) error
 	EditCategory(category *model.Category) error
 
-	GetAllCategories() ([]model.Category, error)
+	GetAllCategories() ([]*model.Category, error)
 }
