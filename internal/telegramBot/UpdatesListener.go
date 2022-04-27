@@ -1,14 +1,13 @@
-package handlers
+package telegramBot
 
 import (
 	"AskMeApp/internal/interfaces"
 	"AskMeApp/internal/model"
-	"AskMeApp/internal/telegramBot"
 	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 )
 
-func HandleBotMessages(botClient *telegramBot.BotClient, userRepo interfaces.UserRepositoryInterface) {
+func HandleBotMessages(botClient *BotClient, userRepo interfaces.UserRepositoryInterface) {
 	for update := range botClient.Updates {
 
 		if update.Message != nil {
@@ -43,6 +42,15 @@ func HandleBotMessages(botClient *telegramBot.BotClient, userRepo interfaces.Use
 				if err != nil {
 					log.Panic("Не удалось отправить сообщение", err)
 				}
+			case "stop":
+				if user.TgUserName != "al_andrew" {
+					continue
+				}
+				err = botClient.SendTextMessage("Приложение завершило свою работу", user.TgChatId)
+				if err != nil {
+					log.Panic("Не удалось отправить сообщение", err)
+				}
+				botClient.Stop()
 			}
 		}
 	}
