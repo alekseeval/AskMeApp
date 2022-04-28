@@ -26,6 +26,16 @@ func NewBotClient(botToken string) (*BotClient, error) {
 	}, nil
 }
 
+func (bot *BotClient) Run(userRepository interfaces.UserRepositoryInterface, questionRepository interfaces.QuestionsRepositoryInterface, wg *sync.WaitGroup) {
+	bot.wg = wg
+	bot.wg.Add(1)
+	go bot.handleBotUpdates(userRepository, questionRepository)
+}
+
+func (bot *BotClient) Stop() {
+	bot.wg.Done()
+}
+
 func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
 	msg := TgBotApi.NewMessage(chatId, msgText)
 	_, err := bot.bot.Send(msg)
@@ -33,14 +43,4 @@ func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
 		return err
 	}
 	return nil
-}
-
-func (bot *BotClient) Run(userRepository interfaces.UserRepositoryInterface, wg *sync.WaitGroup) {
-	bot.wg = wg
-	bot.wg.Add(1)
-	go HandleBotUpdates(bot, userRepository)
-}
-
-func (bot *BotClient) Stop() {
-	bot.wg.Done()
 }

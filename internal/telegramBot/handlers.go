@@ -7,14 +7,15 @@ import (
 	"log"
 )
 
-func HandleBotUpdates(botClient *BotClient, userRepo interfaces.UserRepositoryInterface) {
-	for update := range botClient.updates {
+func (bot *BotClient) handleBotUpdates(userRepo interfaces.UserRepositoryInterface, questionsRepository interfaces.QuestionsRepositoryInterface) {
+
+	for update := range bot.updates {
 
 		if update.Message != nil {
 
 			user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, userRepo)
 			if err != nil {
-				err = botClient.SendTextMessage("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
+				err = bot.SendTextMessage("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
 				if err != nil {
 					log.Panic("Жопа наступила, не удалось получить или создать юзера,"+
 						" а потом еще и сообщение не отправилось", err)
@@ -23,22 +24,22 @@ func HandleBotUpdates(botClient *BotClient, userRepo interfaces.UserRepositoryIn
 
 			switch update.Message.Command() {
 			case "start":
-				err = botClient.SendTextMessage("Это была команда /start", user.TgChatId)
+				err = bot.SendTextMessage("Это была команда /start", user.TgChatId)
 				if err != nil {
 					log.Panic("Не удалось отправить сообщение", err)
 				}
 			case "help":
-				err = botClient.SendTextMessage("Это была команда /help", user.TgChatId)
+				err = bot.SendTextMessage("Это была команда /help", user.TgChatId)
 				if err != nil {
 					log.Panic("Не удалось отправить сообщение", err)
 				}
 			case "question":
-				err = botClient.SendTextMessage("Это была команда /question", user.TgChatId)
+				err = bot.SendTextMessage("Это была команда /question", user.TgChatId)
 				if err != nil {
 					log.Panic("Не удалось отправить сообщение", err)
 				}
 			case "changecategory":
-				err = botClient.SendTextMessage("Это была команда /changecategory", user.TgChatId)
+				err = bot.SendTextMessage("Это была команда /changecategory", user.TgChatId)
 				if err != nil {
 					log.Panic("Не удалось отправить сообщение", err)
 				}
@@ -46,11 +47,11 @@ func HandleBotUpdates(botClient *BotClient, userRepo interfaces.UserRepositoryIn
 				if user.TgUserName != "al_andrew" {
 					continue
 				}
-				err = botClient.SendTextMessage("Приложение завершило свою работу", user.TgChatId)
+				err = bot.SendTextMessage("Приложение завершило свою работу", user.TgChatId)
 				if err != nil {
 					log.Panic("Не удалось отправить сообщение", err)
 				}
-				botClient.Stop()
+				bot.Stop()
 				return
 			}
 		}
