@@ -24,6 +24,7 @@ func main() {
 		log.Panic("Не удалось проинициализировать БД")
 	}
 	userRepo := repo.NewUserRepository(db)
+	questionsRepo := repo.NewQuestionRepository(db)
 
 	botClient, err := telegramBot.NewBotClient(os.Getenv("ASK_ME_APP_TG_TOKEN"))
 	if err != nil {
@@ -31,7 +32,7 @@ func main() {
 	}
 
 	wg := &sync.WaitGroup{}
-	botClient.Run(userRepo, wg)
+	botClient.Run(userRepo, questionsRepo, wg)
 	wg.Wait()
 }
 
