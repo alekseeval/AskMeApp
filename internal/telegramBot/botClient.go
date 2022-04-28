@@ -26,6 +26,7 @@ func NewBotClient(botToken string) (*BotClient, error) {
 	}, nil
 }
 
+// TODO: Заменить WaitGroup на Context
 func (bot *BotClient) Run(userRepository interfaces.UserRepositoryInterface, questionRepository interfaces.QuestionsRepositoryInterface, wg *sync.WaitGroup) {
 	bot.wg = wg
 	bot.wg.Add(1)
