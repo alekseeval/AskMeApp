@@ -30,7 +30,6 @@ func main() {
 		log.Panic("Не удалось проинициализировать бота --- ", err)
 	}
 
-	//handlers.HandleBotMessages(botClient, userRepo)
 	wg := &sync.WaitGroup{}
 	botClient.Run(userRepo, wg)
 	wg.Wait()

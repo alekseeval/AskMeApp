@@ -7,8 +7,8 @@ import (
 	"log"
 )
 
-func HandleBotMessages(botClient *BotClient, userRepo interfaces.UserRepositoryInterface) {
-	for update := range botClient.Updates {
+func HandleBotUpdates(botClient *BotClient, userRepo interfaces.UserRepositoryInterface) {
+	for update := range botClient.updates {
 
 		if update.Message != nil {
 

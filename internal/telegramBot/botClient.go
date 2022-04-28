@@ -7,8 +7,8 @@ import (
 )
 
 type BotClient struct {
-	Bot     *TgBotApi.BotAPI
-	Updates TgBotApi.UpdatesChannel
+	bot     *TgBotApi.BotAPI
+	updates TgBotApi.UpdatesChannel
 	wg      *sync.WaitGroup
 }
 
@@ -21,14 +21,14 @@ func NewBotClient(botToken string) (*BotClient, error) {
 	updatesConfig.Timeout = 60
 	updates := bot.GetUpdatesChan(updatesConfig)
 	return &BotClient{
-		Bot:     bot,
-		Updates: updates,
+		bot:     bot,
+		updates: updates,
 	}, nil
 }
 
 func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
 	msg := TgBotApi.NewMessage(chatId, msgText)
-	_, err := bot.Bot.Send(msg)
+	_, err := bot.bot.Send(msg)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
 func (bot *BotClient) Run(userRepository interfaces.UserRepositoryInterface, wg *sync.WaitGroup) {
 	bot.wg = wg
 	bot.wg.Add(1)
-	go HandleBotMessages(bot, userRepository)
+	go HandleBotUpdates(bot, userRepository)
 }
 
 func (bot *BotClient) Stop() {
