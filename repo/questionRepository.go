@@ -182,7 +182,6 @@ func (repo *QuestionRepository) EditCategory(category *model.Category) error {
 	return err
 }
 
-// TODO: Понять нужно ли возвращать Slice ссылок или просто слайс структур
 func (repo *QuestionRepository) GetAllCategories() ([]*model.Category, error) {
 	categories := make([]*model.Category, 0)
 	rows, err := repo.db.Query(`SELECT id, title FROM question_categories`)
