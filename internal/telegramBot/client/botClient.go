@@ -1,4 +1,4 @@
-package telegramBot
+package client
 
 import (
 	"AskMeApp/internal/interfaces"
@@ -35,13 +35,4 @@ func (bot *BotClient) Run(userRepository interfaces.UserRepositoryInterface, que
 
 func (bot *BotClient) Stop() {
 	bot.wg.Done()
-}
-
-func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
-	msg := TgBotApi.NewMessage(chatId, msgText)
-	_, err := bot.bot.Send(msg)
-	if err != nil {
-		return err
-	}
-	return nil
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"AskMeApp/internal/telegramBot"
+	"AskMeApp/internal/telegramBot/client"
 	"AskMeApp/repo"
 	"database/sql"
 	"fmt"
@@ -26,7 +26,7 @@ func main() {
 	userRepo := repo.NewUserRepository(db)
 	questionsRepo := repo.NewQuestionRepository(db)
 
-	botClient, err := telegramBot.NewBotClient(os.Getenv("ASK_ME_APP_TG_TOKEN"))
+	botClient, err := client.NewBotClient(os.Getenv("ASK_ME_APP_TG_TOKEN"))
 	if err != nil {
 		log.Panic("Не удалось проинициализировать бота --- ", err)
 	}

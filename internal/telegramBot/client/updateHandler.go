@@ -1,4 +1,4 @@
-package telegramBot
+package client
 
 import (
 	"AskMeApp/internal/interfaces"
