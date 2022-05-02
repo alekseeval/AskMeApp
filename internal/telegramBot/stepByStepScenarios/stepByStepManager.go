@@ -3,39 +3,68 @@ package stepByStepScenarios
 import (
 	"AskMeApp/internal/interfaces"
 	"AskMeApp/internal/model"
+	"AskMeApp/internal/telegramBot/client"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"sync"
 )
 
+// StepByStepManager is struct for managing sequences of user actions
 type StepByStepManager struct {
-	questionRepo interfaces.QuestionsRepositoryInterface
-	// TODO: предусмотреть mutex для мапы для работы в конкурентном режиме
-	createQuestionSteps map[int32]*CreateQuestionsSequence
+	questionRepo            interfaces.QuestionsRepositoryInterface
+	createQuestionSequences map[int32]*CreateQuestionsSequence
+	qLock                   sync.Mutex // mutex for save createQuestionSequences map
 }
 
 func newStepByStepManager(questionRepo interfaces.QuestionsRepositoryInterface) *StepByStepManager {
 	return &StepByStepManager{
-		questionRepo:        questionRepo,
-		createQuestionSteps: make(map[int32]*CreateQuestionsSequence),
+		questionRepo:            questionRepo,
+		createQuestionSequences: make(map[int32]*CreateQuestionsSequence),
 	}
 }
 
-func (manager *StepByStepManager) doUserHaveSequences(user *model.User) bool {
-	if manager.createQuestionSteps[user.Id] != nil {
-		return true
-	}
-	return false
+// DoUserHaveSequences - checks all possible user actions (now only sequence of creation new model.Question)
+func (manager *StepByStepManager) DoUserHaveSequences(user *model.User) bool {
+	manager.qLock.Lock()
+	_, found := manager.createQuestionSequences[user.Id]
+	manager.qLock.Unlock()
+	return found
 }
 
-func (manager *StepByStepManager) DoSequenceStep(user *model.User, update *tgbotapi.Update) error {
-	// 1) Выполнение степа (сначала надо найти его в мапе)
-	// 2) Проверка завершенности степа
-	// 3) В случае незавершенности return nil
-	// 4) Иначе сохренение сущности на выходе степа в БД, удаление степа из мэпа
-	// 5) return err
+// StartNewCreateQuestionSequence - starts new sequence for creation new model.Question
+func (manager *StepByStepManager) StartNewCreateQuestionSequence(botClient *client.BotClient, update *tgbotapi.Update, user *model.User) {
+	manager.qLock.Lock()
+	sequence := NewCreateQuestionsSequence(user)
+	sequence.doStep(botClient, update)
+	manager.createQuestionSequences[user.Id] = sequence
+	manager.qLock.Unlock()
+}
+
+// DoUserHaveSequences - checks all possible user actions (now only sequence of creation new model.Question)
+func (manager *StepByStepManager) dropSequenceForUser(user *model.User) {
+	manager.qLock.Lock()
+	_, found := manager.createQuestionSequences[user.Id]
+	if found {
+		delete(manager.createQuestionSequences, user.Id)
+	}
+	manager.qLock.Unlock()
+}
+
+func (manager *StepByStepManager) ExecuteUserSequence(botClient *client.BotClient, user *model.User, update *tgbotapi.Update) error {
+	manager.qLock.Lock()
+	sequence, found := manager.createQuestionSequences[user.Id]
+	if found {
+		sequence.doStep(botClient, update)
+		if sequence.isDone() {
+			question := sequence.getEntity()
+			_, err := manager.questionRepo.AddQuestion(question)
+			delete(manager.createQuestionSequences, user.Id)
+			manager.qLock.Unlock()
+			return err
+		}
+		manager.qLock.Unlock()
+		return nil
+	}
+	manager.qLock.Unlock()
+	// From here may be any other sequence's execution (same as the previous one for CreateQuestionsSequence)
 	return nil
-}
-
-func (manager *StepByStepManager) AddCreateQuestionSequenceForUser(user *model.User) {
-	// TODO: убедиться что именно так и добавляются значения в Map
-	manager.createQuestionSteps[user.Id] = NewCreateQuestionsSequence(user)
 }
