@@ -31,12 +31,16 @@ func (manager *StepByStepManager) DoUserHaveSequences(user *model.User) bool {
 }
 
 // StartNewCreateQuestionSequence - starts new sequence for creation new model.Question
-func (manager *StepByStepManager) StartNewCreateQuestionSequence(botClient *client.BotClient, update *tgbotapi.Update, user *model.User) {
+func (manager *StepByStepManager) StartNewCreateQuestionSequence(botClient *client.BotClient, update *tgbotapi.Update, user *model.User) error {
 	manager.qLock.Lock()
 	sequence := NewCreateQuestionsSequence(user)
-	sequence.doStep(botClient, update)
+	err := sequence.doStep(botClient, update)
+	if err != nil {
+		return err
+	}
 	manager.createQuestionSequences[user.Id] = sequence
 	manager.qLock.Unlock()
+	return nil
 }
 
 // DoUserHaveSequences - checks all possible user actions (now only sequence of creation new model.Question)
@@ -53,7 +57,10 @@ func (manager *StepByStepManager) ExecuteUserSequence(botClient *client.BotClien
 	manager.qLock.Lock()
 	sequence, found := manager.createQuestionSequences[user.Id]
 	if found {
-		sequence.doStep(botClient, update)
+		err := sequence.doStep(botClient, update)
+		if err != nil {
+			return err
+		}
 		if sequence.isDone() {
 			question := sequence.getEntity()
 			_, err := manager.questionRepo.AddQuestion(question)
