@@ -34,7 +34,7 @@ func (manager *StepByStepManager) DoUserHaveSequences(user *model.User) bool {
 func (manager *StepByStepManager) StartNewCreateQuestionSequence(botClient *client.BotClient, update *tgbotapi.Update, user *model.User) error {
 	manager.qLock.Lock()
 	sequence := NewCreateQuestionsSequence(user)
-	err := sequence.doStep(botClient, update)
+	err := sequence.doStep(botClient, update, manager.questionRepo)
 	if err != nil {
 		return err
 	}
@@ -57,16 +57,12 @@ func (manager *StepByStepManager) ExecuteUserSequence(botClient *client.BotClien
 	manager.qLock.Lock()
 	sequence, found := manager.createQuestionSequences[user.Id]
 	if found {
-		err := sequence.doStep(botClient, update)
+		err := sequence.doStep(botClient, update, manager.questionRepo)
 		if err != nil {
 			return err
 		}
 		if sequence.isDone() {
-			question := sequence.getEntity()
-			_, err := manager.questionRepo.AddQuestion(question)
 			delete(manager.createQuestionSequences, user.Id)
-			manager.qLock.Unlock()
-			return err
 		}
 		manager.qLock.Unlock()
 		return nil
