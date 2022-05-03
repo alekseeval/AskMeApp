@@ -33,10 +33,11 @@ func NewCreateQuestionsSequence(user *model.User) *CreateQuestionsSequence {
 func (sequence *CreateQuestionsSequence) doStep(botClient *client.BotClient, update *tgbotapi.Update, questionsRepo interfaces.QuestionsRepositoryInterface) error {
 	switch sequence.step {
 	case waitForCategory:
-		err := botClient.SendTextMessage("Select category:", sequence.question.Author.TgChatId)
 		categories, err := questionsRepo.GetAllCategories()
-		// TODO: бросить inline кнопки с категориями в чат
-		log.Println(categories)
+		if err != nil {
+			return err
+		}
+		err = botClient.SendInlineCategories("Select category", categories, 4, sequence.question.Author.TgChatId)
 		if err != nil {
 			return err
 		}
@@ -44,7 +45,7 @@ func (sequence *CreateQuestionsSequence) doStep(botClient *client.BotClient, upd
 		// TODO: правильно записать категорию через callback и обработать повторный запрос категории, если пользователь ввел текст
 		sequence.question.Category = &model.Category{
 			Id:    1,
-			Title: "Все вопросы",
+			Title: "All",
 		}
 		err := botClient.SendTextMessage("Enter title:", sequence.question.Author.TgChatId)
 		if err != nil {
