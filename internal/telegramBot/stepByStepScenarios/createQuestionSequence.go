@@ -43,6 +43,7 @@ func (sequence *CreateQuestionsSequence) doStep(botClient *client.BotClient, upd
 		}
 	case waitForTitle:
 		// TODO: правильно записать категорию через callback и обработать повторный запрос категории, если пользователь ввел текст
+		//update.CallbackQuery.Data
 		sequence.question.Category = &model.Category{
 			Id:    1,
 			Title: "All",
