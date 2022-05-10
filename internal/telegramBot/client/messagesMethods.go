@@ -2,11 +2,14 @@ package client
 
 import (
 	"AskMeApp/internal/model"
+	"fmt"
 	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"log"
 	"sort"
 )
 
-const OptimalSymbolsNumberInRow int = 36
+const OptimalSymbolsNumberInRow float32 = 36
+const maxButtonsInLineNumber float32 = 4
 
 func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
 	msg := TgBotApi.NewMessage(chatId, msgText)
@@ -32,35 +35,39 @@ func formatCategoriesToInline(categories []*model.Category) [][]TgBotApi.InlineK
 		return len(categoriesCopy[i].Title) < len(categoriesCopy[j].Title)
 	})
 
-	weights := make([]int, 0)
+	weights := make([]float32, 0)
 	for _, c := range categoriesCopy {
-		weight := OptimalSymbolsNumberInRow / len(c.Title)
-		if weight > 4 {
-			weight = 4
+		weight := OptimalSymbolsNumberInRow / float32(len(c.Title))
+		if weight > maxButtonsInLineNumber {
+			weight = maxButtonsInLineNumber
 		}
-		if weight == 0 {
-			weight = 1
+		if weight == maxButtonsInLineNumber {
+			weight = maxButtonsInLineNumber
 		}
-		weights = append(weights, weight)
+		weights = append(weights, maxButtonsInLineNumber/weight)
 	}
+	log.Println(weights)
 
 	inlineButtons := make([][]TgBotApi.InlineKeyboardButton, 1)
-	weightSum := 0
-	for i := range categoriesCopy {
+	var rowNumber int
+	var weightSum float32
+	for i, category := range categoriesCopy {
 		weightSum += weights[i]
-		if weightSum > 4 {
+		if weightSum > maxButtonsInLineNumber {
+			newRow := make([]TgBotApi.InlineKeyboardButton, 0)
+			if len(inlineButtons[rowNumber]) == 0 {
+				inlineButtons[rowNumber] = append(inlineButtons[rowNumber], TgBotApi.NewInlineKeyboardButtonData(category.Title, fmt.Sprint(category.Id)))
+				inlineButtons = append(inlineButtons, newRow)
+				weightSum = 0
+			} else {
+				newRow = append(newRow, TgBotApi.NewInlineKeyboardButtonData(category.Title, fmt.Sprint(category.Id)))
+				inlineButtons = append(inlineButtons, newRow)
+				weightSum = weights[i]
+			}
+			rowNumber += 1
+		} else {
+			inlineButtons[rowNumber] = append(inlineButtons[rowNumber], TgBotApi.NewInlineKeyboardButtonData(category.Title, fmt.Sprint(category.Id)))
 		}
 	}
-
-	inlineButtons := make([][]TgBotApi.InlineKeyboardButton, 1)
-	curNumberInRow := 4
-	i := 0
-	j := curNumberInRow
-	for _, category := range categoriesCopy {
-		if len(category.Title) < OptimalSymbolsNumberInRow/curNumberInRow {
-
-		}
-		//inlineButtons[i/numberInRow] = append(inlineButtons[i/numberInRow], TgBotApi.NewInlineKeyboardButtonData(category.Title, fmt.Sprint(category.Id)))
-	}
-	return
+	return inlineButtons
 }
