@@ -204,13 +204,13 @@ func (repo *QuestionRepository) GetAllCategories() ([]*model.Category, error) {
 	return categories, nil
 }
 
-func (repo QuestionRepository) GetCategoryByTitle(title string) (*model.Category, error) {
-	sqlStatement := `SELECT id FROM question_categories WHERE title=$1`
-	row := repo.db.QueryRow(sqlStatement, title)
+func (repo QuestionRepository) GetCategoryById(id int32) (*model.Category, error) {
+	sqlStatement := `SELECT title FROM question_categories WHERE id=$1`
+	row := repo.db.QueryRow(sqlStatement, id)
 	question := model.Category{
-		Title: title,
+		Id: id,
 	}
-	err := row.Scan(&question.Id)
+	err := row.Scan(&question.Title)
 	if err != nil {
 		return nil, err
 	}

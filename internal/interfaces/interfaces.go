@@ -28,5 +28,5 @@ type CategoriesRepositoryInterface interface {
 	EditCategory(category *model.Category) error
 
 	GetAllCategories() ([]*model.Category, error)
-	GetCategoryByTitle(title string) (*model.Category, error)
+	GetCategoryById(id int32) (*model.Category, error)
 }
