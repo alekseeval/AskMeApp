@@ -15,7 +15,7 @@ type StepByStepManager struct {
 	qLock                   sync.Mutex // mutex for save createQuestionSequences map
 }
 
-func newStepByStepManager(questionRepo interfaces.QuestionsRepositoryInterface) *StepByStepManager {
+func NewStepByStepManager(questionRepo interfaces.QuestionsRepositoryInterface) *StepByStepManager {
 	return &StepByStepManager{
 		questionRepo:            questionRepo,
 		createQuestionSequences: make(map[int32]*CreateQuestionsSequence),
