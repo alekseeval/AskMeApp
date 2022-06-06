@@ -19,30 +19,53 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
+	tx, err := repo.db.Begin()
 	sqlStatement := `
 		INSERT INTO users (first_name, last_name)
 		VALUES ($1, $2)
 		RETURNING id`
-	err := repo.db.QueryRow(sqlStatement, user.FirstName, user.LastName).Scan(&user.Id)
+	err = tx.QueryRow(sqlStatement, user.FirstName, user.LastName).Scan(&user.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return nil, txErr
+		}
 		return nil, err
 	}
 	sqlStatement = `
 		INSERT INTO telegram_users (username, chat_id, user_id)
 		VALUES ($1, $2, $3)`
-	_, err = repo.db.Exec(sqlStatement, user.TgUserName, user.TgChatId, user.Id)
+	_, err = tx.Exec(sqlStatement, user.TgUserName, user.TgChatId, user.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return nil, txErr
+		}
 		return nil, err
 	}
-	return user, nil
+	err = tx.Commit()
+	return user, err
 }
 
 func (repo *UserRepository) Delete(user *model.User) error {
-	_, err := repo.db.Exec(`DELETE FROM telegram_users WHERE user_id=$1;`, user.Id)
+	tx, err := repo.db.Begin()
+	_, err = tx.Exec(`DELETE FROM telegram_users WHERE user_id=$1;`, user.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
-	_, err = repo.db.Exec(`DELETE FROM users WHERE id=$1`, user.Id)
+	_, err = tx.Exec(`DELETE FROM users WHERE id=$1`, user.Id)
+	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
+		return err
+	}
+	err = tx.Commit()
 	return err
 }
 
@@ -50,12 +73,17 @@ func (repo *UserRepository) Edit(user *model.User) error {
 	if user.Id <= 0 {
 		return errors.New("expected model.User entity with correct id field")
 	}
+	tx, err := repo.db.Begin()
 	sqlStatement := `
 		UPDATE users
 		SET first_name=$2, last_name=$3
 		WHERE id=$1`
-	_, err := repo.db.Exec(sqlStatement, user.Id, user.FirstName, user.LastName)
+	_, err = tx.Exec(sqlStatement, user.Id, user.FirstName, user.LastName)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
 	if user.TgChatId != 0 {
@@ -63,8 +91,16 @@ func (repo *UserRepository) Edit(user *model.User) error {
 			UPDATE telegram_users
 			SET username=$2, chat_id=$3
 			WHERE user_id=$1`
-		_, err = repo.db.Exec(sqlStatement, user.Id, user.TgUserName, user.TgChatId)
+		_, err = tx.Exec(sqlStatement, user.Id, user.TgUserName, user.TgChatId)
+		if err != nil {
+			txErr := tx.Rollback()
+			if txErr != nil {
+				return txErr
+			}
+			return err
+		}
 	}
+	err = tx.Commit()
 	return err
 }
 

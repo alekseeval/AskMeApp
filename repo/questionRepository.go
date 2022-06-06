@@ -24,44 +24,75 @@ func (repo *QuestionRepository) AddQuestion(question *model.Question) (*model.Qu
 	if question.Category.Id <= 0 {
 		return nil, errors.New("unknown question category (haven't id)")
 	}
+	tx, err := repo.db.Begin()
 	sqlStatement := `INSERT INTO questions (title, answer) VALUES ($1, $2) RETURNING id`
-	row := repo.db.QueryRow(sqlStatement, question.Title, question.Answer)
-	err := row.Scan(&question.Id)
+	row := tx.QueryRow(sqlStatement, question.Title, question.Answer)
+	err = row.Scan(&question.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return nil, txErr
+		}
 		return nil, err
 	}
 	sqlStatement = `INSERT INTO questions2categories VALUES ($1, $2)`
-	_, err = repo.db.Exec(sqlStatement, question.Id, question.Category.Id)
+	_, err = tx.Exec(sqlStatement, question.Id, question.Category.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return nil, txErr
+		}
 		return nil, err
 	}
 	sqlStatement = `INSERT INTO users2questions VALUES ($1, $2)`
-	_, err = repo.db.Exec(sqlStatement, question.Author.Id, question.Id)
+	_, err = tx.Exec(sqlStatement, question.Author.Id, question.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return nil, txErr
+		}
 		return nil, err
 	}
-	return question, nil
+	err = tx.Commit()
+	return question, err
 }
 
 func (repo *QuestionRepository) DeleteQuestion(question *model.Question) error {
-	sqlStatement := `DELETE FROM questions2categories WHERE question_id=$1`
-	_, err := repo.db.Exec(sqlStatement, question.Id)
+	tx, err := repo.db.Begin()
 	if err != nil {
+		return err
+	}
+	sqlStatement := `DELETE FROM questions2categories WHERE question_id=$1`
+	_, err = tx.Exec(sqlStatement, question.Id)
+	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
 
 	sqlStatement = `DELETE FROM users2questions WHERE question_id=$1`
-	_, err = repo.db.Exec(sqlStatement, question.Id)
+	_, err = tx.Exec(sqlStatement, question.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
 
 	sqlStatement = `DELETE FROM questions WHERE id=$1`
-	_, err = repo.db.Exec(sqlStatement, question.Id)
+	_, err = tx.Exec(sqlStatement, question.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
-	return nil
+	err = tx.Commit()
+	return err
 }
 
 func (repo *QuestionRepository) EditQuestion(question *model.Question) error {
@@ -71,35 +102,47 @@ func (repo *QuestionRepository) EditQuestion(question *model.Question) error {
 	if question.Category.Id <= 0 {
 		return errors.New("unknown question category (haven't id)")
 	}
+	tx, err := repo.db.Begin()
 	sqlStatement := `
 		UPDATE questions2categories
 		SET category_id=$1
 		WHERE question_id=$2`
-	_, err := repo.db.Exec(sqlStatement, question.Category.Id, question.Id)
+	_, err = tx.Exec(sqlStatement, question.Category.Id, question.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
 	sqlStatement = `
 		UPDATE users2questions
 		SET user_id=$1
 		WHERE question_id=$2`
-	_, err = repo.db.Exec(sqlStatement, question.Author.Id, question.Id)
+	_, err = tx.Exec(sqlStatement, question.Author.Id, question.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
 	sqlStatement = `
 		UPDATE questions
 		SET title=$1, answer=$2
 		WHERE id=$3`
-	_, err = repo.db.Exec(sqlStatement, question.Title, question.Answer, question.Id)
+	_, err = tx.Exec(sqlStatement, question.Title, question.Answer, question.Id)
 	if err != nil {
+		txErr := tx.Rollback()
+		if txErr != nil {
+			return txErr
+		}
 		return err
 	}
-	return nil
+	err = tx.Commit()
+	return err
 }
 
-// TODO: Пересмотреть смысл получения всех данных о пользователях и категориях
-//  или оптимизировать формирование сущностей без дублирования
 func (repo *QuestionRepository) GetAllQuestions() ([]*model.Question, error) {
 	sqlStatement := `
 			SELECT q.id, q.title, q.answer,
