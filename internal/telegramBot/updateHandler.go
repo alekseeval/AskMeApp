@@ -6,13 +6,13 @@ import (
 	"log"
 )
 
-func (bot BotClient) handleBotUpdates(userRepo internal.UserRepositoryInterface, questionsRepository internal.QuestionsRepositoryInterface) {
+func (bot BotClient) handleBotUpdates() {
 
 	for update := range bot.updates {
 
 		if update.Message != nil {
 
-			user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, userRepo)
+			user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, bot.userRepository)
 			if err != nil {
 				err = bot.SendTextMessage("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
 				if err != nil {

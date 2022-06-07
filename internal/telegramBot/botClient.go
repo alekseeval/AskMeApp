@@ -10,9 +10,12 @@ type BotClient struct {
 	bot     *TgBotApi.BotAPI
 	updates TgBotApi.UpdatesChannel
 	wg      *sync.WaitGroup
+
+	userRepository     internal.UserRepositoryInterface
+	questionRepository internal.QuestionsRepositoryInterface
 }
 
-func NewBotClient(botToken string) (*BotClient, error) {
+func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepository internal.QuestionsRepositoryInterface, botToken string) (*BotClient, error) {
 	bot, err := TgBotApi.NewBotAPI(botToken)
 	if err != nil {
 		return nil, err
@@ -23,14 +26,17 @@ func NewBotClient(botToken string) (*BotClient, error) {
 	return &BotClient{
 		bot:     bot,
 		updates: updates,
+
+		userRepository:     userRepository,
+		questionRepository: questionRepository,
 	}, nil
 }
 
 // TODO: Заменить WaitGroup на Context
-func (bot *BotClient) Run(userRepository internal.UserRepositoryInterface, questionRepository internal.QuestionsRepositoryInterface, wg *sync.WaitGroup) {
-	bot.wg = wg
+func (bot *BotClient) Run() {
+	bot.wg = &sync.WaitGroup{}
 	bot.wg.Add(1)
-	go bot.handleBotUpdates(userRepository, questionRepository)
+	go bot.handleBotUpdates()
 }
 
 func (bot *BotClient) Stop() {

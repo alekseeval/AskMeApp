@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 )
 
 const (
@@ -26,14 +25,12 @@ func main() {
 	userRepo := repo.NewUserRepository(db)
 	questionsRepo := repo.NewQuestionRepository(db)
 
-	botClient, err := telegramBot.NewBotClient(os.Getenv("ASK_ME_APP_TG_TOKEN"))
+	botClient, err := telegramBot.NewBotClient(userRepo, questionsRepo, os.Getenv("ASK_ME_APP_TG_TOKEN"))
 	if err != nil {
 		log.Panic("Не удалось проинициализировать бота --- ", err)
 	}
-
-	wg := &sync.WaitGroup{}
-	botClient.Run(userRepo, questionsRepo, wg)
-	wg.Wait()
+	botClient.Run()
+	botClient.Stop()
 }
 
 func initDb() (*sql.DB, error) {
