@@ -1,7 +1,7 @@
-package client
+package telegramBot
 
 import (
-	"AskMeApp/internal/model"
+	"AskMeApp/internal"
 	"fmt"
 	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
@@ -11,7 +11,7 @@ import (
 const OptimalSymbolsNumberInRow float32 = 36
 const maxButtonsInLineNumber float32 = 4
 
-func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
+func (bot BotClient) SendTextMessage(msgText string, chatId int64) error {
 	msg := TgBotApi.NewMessage(chatId, msgText)
 	_, err := bot.bot.Send(msg)
 	if err != nil {
@@ -20,7 +20,7 @@ func (bot *BotClient) SendTextMessage(msgText string, chatId int64) error {
 	return nil
 }
 
-func (bot *BotClient) SendInlineCategories(messageExplanation string, categories []*model.Category, chatId int64) error {
+func (bot BotClient) SendInlineCategories(messageExplanation string, categories []*internal.Category, chatId int64) error {
 	inlineButtons := formatCategoriesToInline(categories)
 	inlineMarkup := TgBotApi.NewInlineKeyboardMarkup(inlineButtons...)
 	msg := TgBotApi.NewMessage(chatId, messageExplanation)
@@ -29,8 +29,8 @@ func (bot *BotClient) SendInlineCategories(messageExplanation string, categories
 	return err
 }
 
-func formatCategoriesToInline(categories []*model.Category) [][]TgBotApi.InlineKeyboardButton {
-	categoriesCopy := append([]*model.Category(nil), categories...)
+func formatCategoriesToInline(categories []*internal.Category) [][]TgBotApi.InlineKeyboardButton {
+	categoriesCopy := append([]*internal.Category(nil), categories...)
 	sort.Slice(categoriesCopy, func(i, j int) bool {
 		return len(categoriesCopy[i].Title) < len(categoriesCopy[j].Title)
 	})

@@ -1,7 +1,7 @@
-package client
+package telegramBot
 
 import (
-	"AskMeApp/internal/interfaces"
+	"AskMeApp/internal"
 	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"sync"
 )
@@ -27,7 +27,7 @@ func NewBotClient(botToken string) (*BotClient, error) {
 }
 
 // TODO: Заменить WaitGroup на Context
-func (bot *BotClient) Run(userRepository interfaces.UserRepositoryInterface, questionRepository interfaces.QuestionsRepositoryInterface, wg *sync.WaitGroup) {
+func (bot *BotClient) Run(userRepository internal.UserRepositoryInterface, questionRepository internal.QuestionsRepositoryInterface, wg *sync.WaitGroup) {
 	bot.wg = wg
 	bot.wg.Add(1)
 	go bot.handleBotUpdates(userRepository, questionRepository)

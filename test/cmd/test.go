@@ -1,8 +1,8 @@
 package main
 
 import (
-	"AskMeApp/internal/telegramBot/client"
-	"AskMeApp/repo"
+	"AskMeApp/internal/repo"
+	"AskMeApp/internal/telegramBot"
 	"database/sql"
 	"fmt"
 	"log"
@@ -23,11 +23,11 @@ func main() {
 		log.Panic("Не удалось роинициалихировать БД ", err)
 	}
 	questionRepository := repo.NewQuestionRepository(db)
-	//userRepository := repo.NewUserRepository(db)
+	//userRepository := repo.NewUserRepository(repo)
 
 	token := os.Getenv("ASK_ME_APP_TG_TOKEN")
 	log.Println(token)
-	botClient, err := client.NewBotClient(token)
+	botClient, err := telegramBot.NewBotClient(token)
 	if err != nil {
 		log.Panic(err)
 	}

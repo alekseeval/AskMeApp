@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"AskMeApp/internal/model"
+	"AskMeApp/internal"
 	"database/sql"
 	"errors"
 	_ "github.com/lib/pq"
@@ -18,7 +18,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	}
 }
 
-func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
+func (repo *UserRepository) Add(user *internal.User) (*internal.User, error) {
 	tx, err := repo.db.Begin()
 	sqlStatement := `
 		INSERT INTO users (first_name, last_name)
@@ -47,7 +47,7 @@ func (repo *UserRepository) Add(user *model.User) (*model.User, error) {
 	return user, err
 }
 
-func (repo *UserRepository) Delete(user *model.User) error {
+func (repo *UserRepository) Delete(user *internal.User) error {
 	tx, err := repo.db.Begin()
 	_, err = tx.Exec(`DELETE FROM telegram_users WHERE user_id=$1;`, user.Id)
 	if err != nil {
@@ -69,9 +69,9 @@ func (repo *UserRepository) Delete(user *model.User) error {
 	return err
 }
 
-func (repo *UserRepository) Edit(user *model.User) error {
+func (repo *UserRepository) Edit(user *internal.User) error {
 	if user.Id <= 0 {
-		return errors.New("expected model.User entity with correct id field")
+		return errors.New("expected models.User entity with correct id field")
 	}
 	tx, err := repo.db.Begin()
 	sqlStatement := `
@@ -104,7 +104,7 @@ func (repo *UserRepository) Edit(user *model.User) error {
 	return err
 }
 
-func (repo *UserRepository) GetByChatId(telegramChatId int64) (*model.User, error) {
+func (repo *UserRepository) GetByChatId(telegramChatId int64) (*internal.User, error) {
 	query := `SELECT u.id, u.first_name, u.last_name, tg.username, tg.chat_id
 			  FROM users u LEFT JOIN telegram_users tg ON u.id=tg.user_id
 			  WHERE tg.chat_id=$1`
@@ -123,7 +123,7 @@ func (repo *UserRepository) GetByChatId(telegramChatId int64) (*model.User, erro
 		}
 		return nil, err
 	}
-	usr := model.User{
+	usr := internal.User{
 		Id:         id.Int32,
 		FirstName:  firstName.String,
 		LastName:   lastName.String,

@@ -1,13 +1,12 @@
-package client
+package telegramBot
 
 import (
-	"AskMeApp/internal/interfaces"
-	"AskMeApp/internal/model"
+	"AskMeApp/internal"
 	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 )
 
-func (bot *BotClient) handleBotUpdates(userRepo interfaces.UserRepositoryInterface, questionsRepository interfaces.QuestionsRepositoryInterface) {
+func (bot BotClient) handleBotUpdates(userRepo internal.UserRepositoryInterface, questionsRepository internal.QuestionsRepositoryInterface) {
 
 	for update := range bot.updates {
 
@@ -58,7 +57,7 @@ func (bot *BotClient) handleBotUpdates(userRepo interfaces.UserRepositoryInterfa
 	}
 }
 
-func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository interfaces.UserRepositoryInterface) (*model.User, error) {
+func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository internal.UserRepositoryInterface) (*internal.User, error) {
 	user, err := repository.GetByChatId(tgChatId)
 	if err != nil {
 		return nil, err
@@ -66,7 +65,7 @@ func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository 
 	if user != nil {
 		return user, nil
 	}
-	user = &model.User{
+	user = &internal.User{
 		FirstName:  tgUserInfo.FirstName,
 		LastName:   tgUserInfo.LastName,
 		TgUserName: tgUserInfo.UserName,

@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"AskMeApp/internal/model"
+	"AskMeApp/internal"
 	"database/sql"
 	"errors"
 	_ "github.com/lib/pq"
@@ -17,7 +17,7 @@ func NewQuestionRepository(db *sql.DB) *QuestionRepository {
 	}
 }
 
-func (repo *QuestionRepository) AddQuestion(question *model.Question) (*model.Question, error) {
+func (repo *QuestionRepository) AddQuestion(question *internal.Question) (*internal.Question, error) {
 	if question.Author.Id <= 0 {
 		return nil, errors.New("user is unregistered")
 	}
@@ -57,7 +57,7 @@ func (repo *QuestionRepository) AddQuestion(question *model.Question) (*model.Qu
 	return question, err
 }
 
-func (repo *QuestionRepository) DeleteQuestion(question *model.Question) error {
+func (repo *QuestionRepository) DeleteQuestion(question *internal.Question) error {
 	tx, err := repo.db.Begin()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (repo *QuestionRepository) DeleteQuestion(question *model.Question) error {
 	return err
 }
 
-func (repo *QuestionRepository) EditQuestion(question *model.Question) error {
+func (repo *QuestionRepository) EditQuestion(question *internal.Question) error {
 	if question.Author.Id <= 0 {
 		return errors.New("user is unregistered")
 	}
@@ -143,7 +143,7 @@ func (repo *QuestionRepository) EditQuestion(question *model.Question) error {
 	return err
 }
 
-func (repo *QuestionRepository) GetAllQuestions() ([]*model.Question, error) {
+func (repo *QuestionRepository) GetAllQuestions() ([]*internal.Question, error) {
 	sqlStatement := `
 			SELECT q.id, q.title, q.answer,
 			       category_id, qc.title category_title,
@@ -158,7 +158,7 @@ func (repo *QuestionRepository) GetAllQuestions() ([]*model.Question, error) {
 	if err != nil {
 		return nil, err
 	}
-	questions := make([]*model.Question, 0)
+	questions := make([]*internal.Question, 0)
 	for rows.Next() {
 		var id sql.NullInt32
 		var title sql.NullString
@@ -174,15 +174,15 @@ func (repo *QuestionRepository) GetAllQuestions() ([]*model.Question, error) {
 		if err != nil {
 			return nil, err
 		}
-		q := model.Question{
+		q := internal.Question{
 			Id:     id.Int32,
 			Title:  title.String,
 			Answer: answer.String,
-			Category: &model.Category{
+			Category: &internal.Category{
 				Id:    categoryId.Int32,
 				Title: categoryTitle.String,
 			},
-			Author: &model.User{
+			Author: &internal.User{
 				Id:         authorId.Int32,
 				FirstName:  authorFirstName.String,
 				LastName:   authorLastName.String,
@@ -195,7 +195,7 @@ func (repo *QuestionRepository) GetAllQuestions() ([]*model.Question, error) {
 	return questions, nil
 }
 
-func (repo *QuestionRepository) AddCategory(category *model.Category) (*model.Category, error) {
+func (repo *QuestionRepository) AddCategory(category *internal.Category) (*internal.Category, error) {
 	sqlStatement := `
 			INSERT INTO question_categories(title) 
 			VALUES ($1)
@@ -204,7 +204,7 @@ func (repo *QuestionRepository) AddCategory(category *model.Category) (*model.Ca
 	return category, err
 }
 
-func (repo *QuestionRepository) DeleteCategory(category *model.Category) error {
+func (repo *QuestionRepository) DeleteCategory(category *internal.Category) error {
 	if category.Id <= 0 {
 		return errors.New("id field is not valid. Fail to delete category")
 	}
@@ -213,7 +213,7 @@ func (repo *QuestionRepository) DeleteCategory(category *model.Category) error {
 	return err
 }
 
-func (repo *QuestionRepository) EditCategory(category *model.Category) error {
+func (repo *QuestionRepository) EditCategory(category *internal.Category) error {
 	if category.Id <= 0 {
 		return errors.New("id field is not valid. Fail to delete category")
 	}
@@ -225,8 +225,8 @@ func (repo *QuestionRepository) EditCategory(category *model.Category) error {
 	return err
 }
 
-func (repo *QuestionRepository) GetAllCategories() ([]*model.Category, error) {
-	categories := make([]*model.Category, 0)
+func (repo *QuestionRepository) GetAllCategories() ([]*internal.Category, error) {
+	categories := make([]*internal.Category, 0)
 	rows, err := repo.db.Query(`SELECT id, title FROM question_categories`)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (repo *QuestionRepository) GetAllCategories() ([]*model.Category, error) {
 		if err != nil {
 			return nil, err
 		}
-		c := model.Category{
+		c := internal.Category{
 			Id:    id.Int32,
 			Title: title.String,
 		}
@@ -247,10 +247,10 @@ func (repo *QuestionRepository) GetAllCategories() ([]*model.Category, error) {
 	return categories, nil
 }
 
-func (repo QuestionRepository) GetCategoryById(id int32) (*model.Category, error) {
+func (repo QuestionRepository) GetCategoryById(id int32) (*internal.Category, error) {
 	sqlStatement := `SELECT title FROM question_categories WHERE id=$1`
 	row := repo.db.QueryRow(sqlStatement, id)
-	question := model.Category{
+	question := internal.Category{
 		Id: id,
 	}
 	err := row.Scan(&question.Title)
