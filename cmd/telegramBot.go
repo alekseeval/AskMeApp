@@ -29,8 +29,8 @@ func main() {
 	if err != nil {
 		log.Panic("Не удалось проинициализировать бота --- ", err)
 	}
-	botClient.Run()
-	botClient.Stop()
+	go botClient.Run()
+	botClient.Shutdown()
 }
 
 func initDb() (*sql.DB, error) {
