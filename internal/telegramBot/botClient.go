@@ -5,6 +5,7 @@ import (
 	"context"
 	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
+	"sync"
 )
 
 type BotClient struct {
@@ -37,56 +38,69 @@ func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepos
 }
 
 func (bot *BotClient) Run() {
-
-	for update := range bot.updates {
-
-		if update.Message != nil {
-
-			user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, bot.userRepository)
-			if err != nil {
-				err = bot.SendTextMessage("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
-				if err != nil {
-					log.Panic("Жопа наступила, не удалось получить или создать юзера,"+
-						" а потом еще и сообщение не отправилось", err)
-				}
-			}
-
-			switch update.Message.Command() {
-			case "start":
-				err = bot.SendTextMessage("Это была команда /start", user.TgChatId)
-				if err != nil {
-					log.Panic("Не удалось отправить сообщение", err)
-				}
-			case "help":
-				err = bot.SendTextMessage("Это была команда /help", user.TgChatId)
-				if err != nil {
-					log.Panic("Не удалось отправить сообщение", err)
-				}
-			case "question":
-				err = bot.SendTextMessage("Это была команда /question", user.TgChatId)
-				if err != nil {
-					log.Panic("Не удалось отправить сообщение", err)
-				}
-			case "changecategory":
-				err = bot.SendTextMessage("Это была команда /changecategory", user.TgChatId)
-				if err != nil {
-					log.Panic("Не удалось отправить сообщение", err)
-				}
-			case "shutdown":
-				if user.TgUserName != "al_andrew" {
-					continue
-				}
-				err = bot.SendTextMessage("Приложение завершило свою работу", user.TgChatId)
-				if err != nil {
-					log.Panic("Не удалось отправить сообщение", err)
-				}
-				bot.Shutdown()
-				return
-			}
-		}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	select {
+	case <-bot.ctx.Done():
+		wg.Done()
+		break
+	case update := <-bot.updates:
+		log.Print("Привет")
+		wg.Add(1)
+		bot.handleUpdate(&wg, &update)
 	}
+	wg.Wait()
 }
 
 func (bot *BotClient) Shutdown() {
-	bot.ctx
+	bot.ctx.Done()
+}
+
+func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) {
+
+	defer wg.Done()
+
+	if update.Message != nil {
+
+		user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, bot.userRepository)
+		if err != nil {
+			err = bot.SendTextMessage("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
+			if err != nil {
+				log.Panic("Жопа наступила, не удалось получить или создать юзера,"+
+					" а потом еще и сообщение не отправилось", err)
+			}
+		}
+
+		switch update.Message.Command() {
+		case "start":
+			err = bot.SendTextMessage("Это была команда /start", user.TgChatId)
+			if err != nil {
+				log.Panic("Не удалось отправить сообщение", err)
+			}
+		case "help":
+			err = bot.SendTextMessage("Это была команда /help", user.TgChatId)
+			if err != nil {
+				log.Panic("Не удалось отправить сообщение", err)
+			}
+		case "question":
+			err = bot.SendTextMessage("Это была команда /question", user.TgChatId)
+			if err != nil {
+				log.Panic("Не удалось отправить сообщение", err)
+			}
+		case "changecategory":
+			err = bot.SendTextMessage("Это была команда /changecategory", user.TgChatId)
+			if err != nil {
+				log.Panic("Не удалось отправить сообщение", err)
+			}
+		case "shutdown":
+			if user.TgUserName != "al_andrew" {
+				return
+			}
+			err = bot.SendTextMessage("Приложение завершило свою работу", user.TgChatId)
+			if err != nil {
+				log.Panic("Не удалось отправить сообщение", err)
+			}
+			bot.Shutdown()
+		}
+	}
 }
