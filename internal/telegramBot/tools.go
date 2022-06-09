@@ -3,6 +3,8 @@ package telegramBot
 import (
 	"AskMeApp/internal"
 	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"math/rand"
+	"time"
 )
 
 func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository internal.UserRepositoryInterface) (*internal.User, error) {
@@ -24,4 +26,18 @@ func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository 
 		return nil, err
 	}
 	return user, nil
+}
+
+func (bot *BotClient) GetTotallyRandomQuestion() (question *internal.Question, err error) {
+	allQuestions, err := bot.questionRepository.GetAllQuestions()
+	if err != nil {
+		return question, err
+	}
+
+	randSource := rand.NewSource(time.Now().UnixNano())
+	randomizer := rand.New(randSource)
+
+	randomNumber := randomizer.Intn(len(allQuestions))
+	question = allQuestions[randomNumber]
+	return question, err
 }
