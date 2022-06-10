@@ -25,6 +25,27 @@ func main() {
 	userRepo := repo.NewUserRepository(db)
 	questionsRepo := repo.NewQuestionRepository(db)
 
+	//question := &internal.Question{
+	//	Id:    int32(1),
+	//	Title: "Name all SOLID principles",
+	//	Answer: "S -\tSingle responsibility principle\n" +
+	//		"O -\tOpen/Closed principle\n" +
+	//		"L -\tLiskov substitute principle\n" +
+	//		"I -\tInterface segregation principle\n" +
+	//		"D -\tDependency inversion principle",
+	//	Category: &internal.Category{
+	//		Id:    1,
+	//		Title: "Все вопросы",
+	//	},
+	//	Author: &internal.User{
+	//		Id: 1,
+	//	},
+	//}
+	//err = questionsRepo.EditQuestion(question)
+	//if err != nil {
+	//	log.Panic("На начале умер", err)
+	//}
+
 	botClient, err := telegramBot.NewBotClient(userRepo, questionsRepo, os.Getenv("ASK_ME_APP_TG_TOKEN"))
 	if err != nil {
 		log.Panic("Не удалось проинициализировать бота --- ", err)
