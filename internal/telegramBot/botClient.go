@@ -78,7 +78,7 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 
 		user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, bot.userRepository)
 		if err != nil {
-			err = bot.SendTextMessage("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
+			err = bot.SendStringMessageInChat("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
 			if err != nil {
 				log.Panic("Жопа наступила, не удалось получить или создать юзера,"+
 					" а потом еще и сообщение не отправилось", err)
@@ -87,38 +87,26 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 
 		switch update.Message.Command() {
 		case "start":
-			err = bot.SendTextMessage("Это была команда /start", user.TgChatId)
+			err = bot.SendStringMessageInChat("Это была команда /start", user.TgChatId)
 			if err != nil {
 				log.Panic("Не удалось отправить сообщение", err)
 			}
 		case "help":
-			err = bot.SendTextMessage("Это была команда /help", user.TgChatId)
+			err = bot.SendStringMessageInChat("Это была команда /help", user.TgChatId)
 			if err != nil {
 				log.Panic("Не удалось отправить сообщение", err)
 			}
 		case "question":
-			question, err := bot.GetTotallyRandomQuestion()
+			err = bot.SendRandomQuestionToUser(user)
 			if err != nil {
-				if errors.Is(err, internal.NewZeroQuestionsError()) {
-					err = bot.SendTextMessage("На данный момент ваша **База знаний** пуста", user.TgChatId)
-					if err != nil {
-						log.Panic("Не удалось отправить сообщение", err)
-					}
-				} else {
-					log.Panic("Не удалось получить случайный вопрос", err)
-				}
-			} else {
-				err = bot.SendTextMessage(question.Title, user.TgChatId)
-				if err != nil {
-					log.Panic("Не удалось отправить сообщение", err)
-				}
+				log.Panic(err)
 			}
 		case "shutdown":
 			if user.TgUserName != "al_andrew" {
 				log.Print("Нарушитель пытался завершить работу приложения", user.TgUserName)
 				return
 			}
-			err = bot.SendTextMessage("Приложение завершило свою работу", user.TgChatId)
+			err = bot.SendStringMessageInChat("Приложение завершило свою работу", user.TgChatId)
 			if err != nil {
 				log.Panic("Не удалось отправить сообщение", err)
 			}

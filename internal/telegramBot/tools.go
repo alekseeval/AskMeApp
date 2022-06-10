@@ -28,19 +28,10 @@ func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository 
 	return user, nil
 }
 
-func (bot *BotClient) GetTotallyRandomQuestion() (question *internal.Question, err error) {
-	allQuestions, err := bot.questionRepository.GetAllQuestions()
-	if err != nil {
-		return question, err
-	}
-	if len(allQuestions) == 0 {
-		return question, internal.NewZeroQuestionsError()
-	}
-
+func GetRandomQuestion(questions []*internal.Question) (question *internal.Question) {
 	randSource := rand.NewSource(time.Now().UnixNano())
 	randomizer := rand.New(randSource)
-
-	randomNumber := randomizer.Intn(len(allQuestions))
-	question = allQuestions[randomNumber]
-	return question, err
+	randomNumber := randomizer.Intn(len(questions))
+	question = questions[randomNumber]
+	return question
 }
