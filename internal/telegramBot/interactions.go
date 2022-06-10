@@ -25,3 +25,12 @@ func (bot *BotClient) SendRandomQuestionToUser(user *internal.User) error {
 	_, err = bot.bot.Send(msg)
 	return err
 }
+
+func (bot *BotClient) setCustomKeyboardToUser(user *internal.User) error {
+	keyBoardMarkup := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Gimme question"))
+	replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardMarkup)
+	msg := tgbotapi.NewMessage(user.TgChatId, "Welcome!")
+	msg.ReplyMarkup = replyKeyboard
+	_, err := bot.bot.Send(msg)
+	return err
+}

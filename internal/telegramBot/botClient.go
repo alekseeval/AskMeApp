@@ -87,9 +87,9 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 
 		switch update.Message.Command() {
 		case "start":
-			err = bot.SendStringMessageInChat("Это была команда /start", user.TgChatId)
+			err = bot.setCustomKeyboardToUser(user)
 			if err != nil {
-				log.Panic("Не удалось отправить сообщение", err)
+				log.Panic("Не удалось установить клавиатуру", err)
 			}
 		case "help":
 			err = bot.SendStringMessageInChat("Это была команда /help", user.TgChatId)
