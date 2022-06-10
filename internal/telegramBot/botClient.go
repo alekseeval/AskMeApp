@@ -94,9 +94,21 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 				log.Panic("Не удалось отправить сообщение", err)
 			}
 		case "question":
-			err = bot.SendTextMessage("Это была команда /question", user.TgChatId)
+			question, err := bot.GetTotallyRandomQuestion()
 			if err != nil {
-				log.Panic("Не удалось отправить сообщение", err)
+				if errors.Is(err, internal.NewZeroQuestionsError()) {
+					err = bot.SendTextMessage("На данный момент ваша **База знаний** пуста", user.TgChatId)
+					if err != nil {
+						log.Panic("Не удалось отправить сообщение", err)
+					}
+				} else {
+					log.Panic("Не удалось получить случайный вопрос", err)
+				}
+			} else {
+				err = bot.SendTextMessage(question.Title, user.TgChatId)
+				if err != nil {
+					log.Panic("Не удалось отправить сообщение", err)
+				}
 			}
 		case "changecategory":
 			err = bot.SendTextMessage("Это была команда /changecategory", user.TgChatId)

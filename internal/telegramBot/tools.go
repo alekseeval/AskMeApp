@@ -33,6 +33,9 @@ func (bot *BotClient) GetTotallyRandomQuestion() (question *internal.Question, e
 	if err != nil {
 		return question, err
 	}
+	if len(allQuestions) == 0 {
+		return question, internal.NewZeroQuestionsError()
+	}
 
 	randSource := rand.NewSource(time.Now().UnixNano())
 	randomizer := rand.New(randSource)

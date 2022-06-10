@@ -23,3 +23,14 @@ type Question struct {
 	Category *Category `json:"category"`
 	Author   *User     `json:"authorId"`
 }
+
+type ZeroQuestionsError struct {
+}
+
+func NewZeroQuestionsError() *ZeroQuestionsError {
+	return &ZeroQuestionsError{}
+}
+
+func (err *ZeroQuestionsError) Error() string {
+	return "no questions returned"
+}
