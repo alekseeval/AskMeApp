@@ -2,6 +2,7 @@ package telegramBot
 
 import (
 	"AskMeApp/internal"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func (bot *BotClient) SendRandomQuestionToUser(user *internal.User) error {
@@ -17,6 +18,10 @@ func (bot *BotClient) SendRandomQuestionToUser(user *internal.User) error {
 		return nil
 	}
 	question := GetRandomQuestion(allQuestions)
-	err = bot.SendStringMessageInChat("❔"+question.Title, user.TgChatId)
+
+	msg := tgbotapi.NewMessage(user.TgChatId, "*Theme:* __"+question.Category.Title+
+		"__\n\n*Question:\n*_"+question.Title+"_")
+	msg.ParseMode = "MarkdownV2"
+	_, err = bot.bot.Send(msg)
 	return err
 }
