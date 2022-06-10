@@ -64,6 +64,7 @@ func (bot *BotClient) Shutdown() error {
 	} else {
 		return errors.New("bot isn't running yet")
 	}
+	bot.cancelFunc = nil
 	return nil
 }
 
