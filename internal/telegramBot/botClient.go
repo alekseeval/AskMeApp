@@ -36,7 +36,10 @@ func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepos
 	}, nil
 }
 
-func (bot *BotClient) Run() {
+func (bot *BotClient) Run() error {
+	if bot.cancelFunc != nil {
+		return errors.New("bot already running")
+	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	bot.cancelFunc = cancelFunc
 	var wg sync.WaitGroup
@@ -55,6 +58,7 @@ func (bot *BotClient) Run() {
 	}
 	log.Print("Waiting for all processes..")
 	wg.Wait()
+	return nil
 }
 
 func (bot *BotClient) Shutdown() error {

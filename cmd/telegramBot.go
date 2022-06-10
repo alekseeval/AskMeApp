@@ -50,7 +50,10 @@ func main() {
 	if err != nil {
 		log.Panic("Не удалось проинициализировать бота --- ", err)
 	}
-	botClient.Run()
+	err = botClient.Run()
+	if err != nil {
+		log.Panic(err)
+	}
 	//botClient.Shutdown()
 }
 
