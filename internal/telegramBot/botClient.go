@@ -43,15 +43,13 @@ func (bot *BotClient) Run() error {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	bot.cancelFunc = cancelFunc
 	var wg sync.WaitGroup
-	wg.Add(1)
 	for {
 		select {
 		case <-ctx.Done():
-			wg.Done()
 			break
 		case update := <-bot.updates:
 			wg.Add(1)
-			bot.handleUpdate(&wg, &update)
+			go bot.handleUpdate(&wg, &update)
 			continue
 		}
 		break
@@ -114,11 +112,6 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 				if err != nil {
 					log.Panic("Не удалось отправить сообщение", err)
 				}
-			}
-		case "changecategory":
-			err = bot.SendTextMessage("Это была команда /changecategory", user.TgChatId)
-			if err != nil {
-				log.Panic("Не удалось отправить сообщение", err)
 			}
 		case "shutdown":
 			if user.TgUserName != "al_andrew" {
