@@ -11,7 +11,12 @@ import (
 const OptimalSymbolsNumberInRow float32 = 36
 const maxButtonsInLineNumber float32 = 4
 
-func (bot BotClient) SendStringMessageInChat(msgText string, chatId int64) error {
+func (bot *BotClient) setCustomKeyboardToUser(user *internal.User) error {
+	// TODO: Сделать
+	return nil
+}
+
+func (bot *BotClient) SendStringMessageInChat(msgText string, chatId int64) error {
 	msg := TgBotApi.NewMessage(chatId, msgText)
 	_, err := bot.bot.Send(msg)
 	if err != nil {
@@ -20,7 +25,7 @@ func (bot BotClient) SendStringMessageInChat(msgText string, chatId int64) error
 	return nil
 }
 
-func (bot BotClient) SendInlineCategories(messageExplanation string, categories []*internal.Category, chatId int64) error {
+func (bot *BotClient) SendInlineCategories(messageExplanation string, categories []*internal.Category, chatId int64) error {
 	inlineButtons := formatCategoriesToInline(categories)
 	inlineMarkup := TgBotApi.NewInlineKeyboardMarkup(inlineButtons...)
 	msg := TgBotApi.NewMessage(chatId, messageExplanation)
