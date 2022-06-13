@@ -8,8 +8,10 @@ import (
 	"sort"
 )
 
-const OptimalSymbolsNumberInRow float32 = 36
-const maxButtonsInLineNumber float32 = 4
+const (
+	OptimalSymbolsNumberInRow float32 = 36
+	maxButtonsInLineNumber    float32 = 4
+)
 
 func (bot *BotClient) SendStringMessageInChat(msgText string, chatId int64) error {
 	msg := TgBotApi.NewMessage(chatId, msgText)
