@@ -9,6 +9,15 @@ import (
 	"sync"
 )
 
+const (
+	randomQuestionCommandText = "Gimme question"
+	randomQuestionCommand     = "question"
+	helpCommand               = "help"
+	startCommand              = "start"
+
+	shutdownCommand = "shutdown"
+)
+
 type BotClient struct {
 	bot     *TgBotApi.BotAPI
 	updates TgBotApi.UpdatesChannel
@@ -86,22 +95,22 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 		}
 
 		switch update.Message.Command() {
-		case "start":
+		case startCommand:
 			err = bot.setCustomKeyboardToUser(user)
 			if err != nil {
 				log.Panic("Не удалось установить клавиатуру", err)
 			}
-		case "help":
+		case helpCommand:
 			err = bot.SendStringMessageInChat("Это была команда /help", user.TgChatId)
 			if err != nil {
 				log.Panic("Не удалось отправить сообщение", err)
 			}
-		case "question":
+		case randomQuestionCommand:
 			err = bot.SendRandomQuestionToUser(user)
 			if err != nil {
 				log.Panic(err)
 			}
-		case "shutdown":
+		case shutdownCommand:
 			if user.TgUserName != "al_andrew" {
 				log.Print("Нарушитель пытался завершить работу приложения", user.TgUserName)
 				return
@@ -113,6 +122,14 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 			err = bot.Shutdown()
 			if err != nil {
 				log.Panic("Запущенный бот не запущен", err)
+			}
+		}
+
+		switch update.Message.Text {
+		case randomQuestionCommandText:
+			err = bot.SendRandomQuestionToUser(user)
+			if err != nil {
+				log.Panic(err)
 			}
 		}
 	}
