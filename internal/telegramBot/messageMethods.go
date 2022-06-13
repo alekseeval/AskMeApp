@@ -20,7 +20,7 @@ func (bot *BotClient) SendStringMessageInChat(msgText string, chatId int64) erro
 	return nil
 }
 
-func (bot *BotClient) SendInlineCategories(messageExplanation string, categories []*internal.Category, chatId int64) error {
+func (bot *BotClient) SendAllCategoriesInline(messageExplanation string, categories []*internal.Category, chatId int64) error {
 	inlineButtons := formatCategoriesToInline(categories)
 	inlineMarkup := TgBotApi.NewInlineKeyboardMarkup(inlineButtons...)
 	msg := TgBotApi.NewMessage(chatId, messageExplanation)
