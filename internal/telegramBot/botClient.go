@@ -16,6 +16,7 @@ const (
 	startCommand              = "start"
 
 	shutdownCommand = "shutdown"
+	adminTgUserName = "al_andrew"
 )
 
 type BotClient struct {
@@ -111,7 +112,7 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 				log.Panic(err)
 			}
 		case shutdownCommand:
-			if user.TgUserName != "al_andrew" {
+			if user.TgUserName != adminTgUserName {
 				log.Print("Нарушитель пытался завершить работу приложения", user.TgUserName)
 				return
 			}
