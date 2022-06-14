@@ -8,15 +8,16 @@ import (
 const NilStep int = 0
 
 const (
-	QuestionEndStep int = iota*3 + 1
-	Question2Step
-	Question3Step
-	Question4Step
+	// TODO: реализовать добавление задачи по шагам
+	NewQuestionEndStep int = iota*3 + 1
+	NewQuestion2Step
+	NewQuestion3Step
+	NewQuestion4Step
 )
 
 const (
-	CategoryEndStep int = iota*3 + 2
-	Category2Step
+	ChangeCategoryEndStep int = iota*3 + 2
+	ChangeCategoryChooseStep
 )
 
 type userState struct {
