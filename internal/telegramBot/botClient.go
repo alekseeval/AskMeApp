@@ -24,6 +24,9 @@ type BotClient struct {
 	updates TgBotApi.UpdatesChannel
 
 	cancelFunc context.CancelFunc
+	// TODO: встроить map[internal.User.Id]->*userState
+	// 	 Хватать Mutex в userState и отпускать через defer в начале обработки каждого Update
+	//	 Инициализировать запуск сценария с нужного шага при необходимости (скорее всего команда /newQuestion)
 
 	userRepository     internal.UserRepositoryInterface
 	questionRepository internal.QuestionsRepositoryInterface
