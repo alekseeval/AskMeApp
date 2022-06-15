@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -29,11 +31,19 @@ func main() {
 	if err != nil {
 		log.Panic("Не удалось проинициализировать бота --- ", err)
 	}
-	err = botClient.Run()
+	exitCh := make(chan os.Signal, 1)
+	signal.Notify(exitCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		err := botClient.Run()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+	<-exitCh
+	err = botClient.Shutdown()
 	if err != nil {
-		log.Panic(err)
+		log.Panic("Не удалось завершить работу бота", err)
 	}
-	//botClient.Shutdown()
 }
 
 func initDb() (*sql.DB, error) {

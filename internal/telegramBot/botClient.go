@@ -14,9 +14,6 @@ const (
 	randomQuestionCommand     = "question"
 	helpCommand               = "help"
 	startCommand              = "start"
-
-	shutdownCommand = "shutdown"
-	adminTgUserName = "al_andrew"
 )
 
 type BotClient struct {
@@ -24,6 +21,7 @@ type BotClient struct {
 	updates TgBotApi.UpdatesChannel
 
 	cancelFunc context.CancelFunc
+	wg         sync.WaitGroup
 	// TODO: встроить map[internal.User.Id]->*userState
 	// 	 Хватать Mutex в userState и отпускать через defer в начале обработки каждого Update
 	//	 Инициализировать запуск сценария с нужного шага при необходимости (скорее всего команда /newQuestion)
@@ -55,37 +53,38 @@ func (bot *BotClient) Run() error {
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	bot.cancelFunc = cancelFunc
-	var wg sync.WaitGroup
+	bot.wg = sync.WaitGroup{}
+	bot.wg.Add(1)
 	for {
 		select {
 		case <-ctx.Done():
 			break
 		case update := <-bot.updates:
-			wg.Add(1)
-			go bot.handleUpdate(&wg, &update)
+			bot.wg.Add(1)
+			go bot.handleUpdate(&update)
 			continue
 		}
 		break
 	}
-	log.Print("Waiting for all processes..")
-	wg.Wait()
+	bot.wg.Done()
 	return nil
 }
 
 func (bot *BotClient) Shutdown() error {
-	if bot.cancelFunc != nil {
-		bot.cancelFunc()
-		log.Print("Shutdown..")
-	} else {
+	if bot.cancelFunc == nil {
 		return errors.New("bot isn't running yet")
 	}
+	bot.cancelFunc()
 	bot.cancelFunc = nil
+
+	log.Print("Waiting for all processes..")
+	bot.wg.Wait()
 	return nil
 }
 
-func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) {
+func (bot *BotClient) handleUpdate(update *TgBotApi.Update) {
 
-	defer wg.Done()
+	defer bot.wg.Done()
 
 	if update.Message != nil {
 
@@ -113,19 +112,6 @@ func (bot *BotClient) handleUpdate(wg *sync.WaitGroup, update *TgBotApi.Update) 
 			err = bot.SendRandomQuestionToUser(user)
 			if err != nil {
 				log.Panic(err)
-			}
-		case shutdownCommand:
-			if user.TgUserName != adminTgUserName {
-				log.Print("Нарушитель пытался завершить работу приложения", user.TgUserName)
-				return
-			}
-			err = bot.SendStringMessageInChat("Приложение завершило свою работу", user.TgChatId)
-			if err != nil {
-				log.Panic("Не удалось отправить сообщение", err)
-			}
-			err = bot.Shutdown()
-			if err != nil {
-				log.Panic("Запущенный бот не запущен", err)
 			}
 		}
 
