@@ -88,8 +88,12 @@ func (bot *BotClient) SendRandomQuestionToUser(user *internal.User) error {
 	}
 	question := GetRandomQuestion(allQuestions)
 
-	msg := tgbotapi.NewMessage(user.TgChatId, "*Theme:* __"+question.Category.Title+
-		"__\n\n*Question:\n*_"+question.Title+"_")
+	themesText := ""
+	for _, category := range question.Categories {
+		themesText += "\t__" + category.Title + "__"
+	}
+	msg := tgbotapi.NewMessage(user.TgChatId, themesText+
+		"\n\n*Question:\n*_"+question.Title+"_")
 	msg.ParseMode = "MarkdownV2"
 	_, err = bot.bot.Send(msg)
 	return err
