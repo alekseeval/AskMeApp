@@ -31,7 +31,7 @@ type userState struct {
 }
 
 func NewUserState(currentCategory internal.Category) *userState {
-	return userState{
+	return &userState{
 		CurrentCategory: currentCategory,
 		SequenceStep:    NilStep,
 		mutex:           sync.Mutex{},
