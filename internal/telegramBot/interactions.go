@@ -27,10 +27,18 @@ type userState struct {
 	unfilledQuestion *internal.Question
 	unfilledCategory *internal.Category
 
-	mutex *sync.Mutex
+	mutex sync.Mutex
 }
 
-func (bot BotClient) ProcessUserStep(user *internal.User, stepState *userState) error {
+func NewUserState(currentCategory internal.Category) *userState {
+	return userState{
+		CurrentCategory: currentCategory,
+		SequenceStep:    NilStep,
+		mutex:           sync.Mutex{},
+	}
+}
+
+func (bot *BotClient) ProcessUserStep(user *internal.User, stepState *userState) error {
 	// TODO: Написать switch на каждый Step из констант с обработкой сценария, изменить переданный state
 	return nil
 }

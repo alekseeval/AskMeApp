@@ -22,6 +22,8 @@ type BotClient struct {
 
 	cancelFunc context.CancelFunc
 	wg         sync.WaitGroup
+
+	usersStates map[int64]userState
 	// TODO: встроить map[internal.User.Id]->*userState
 	// 	 Хватать Mutex в userState и отпускать через defer в начале обработки каждого Update
 	//	 Инициализировать запуск сценария с нужного шага при необходимости (скорее всего команда /newQuestion)
@@ -86,9 +88,24 @@ func (bot *BotClient) handleUpdate(update *TgBotApi.Update) {
 
 	defer bot.wg.Done()
 
-	if update.Message != nil {
+	user, err := VerifyOrRegisterUser(update.SentFrom(), bot.userRepository)
+	state, ok := bot.usersStates[user.TgChatId]
+	if ok && state.SequenceStep != NilStep {
+		state.mutex.Lock()
+		defer state.mutex.Unlock()
+		err = bot.ProcessUserStep(user, &state)
+		if err != nil {
+			log.Panic(err)
+		}
+		return
+	} else {
+		// TODO:
+		//state = NewUserState()
+	}
+	state.mutex.Lock()
+	defer state.mutex.Unlock()
 
-		user, err := VerifyOrRegisterUser(update.Message.Chat.ID, update.Message.From, bot.userRepository)
+	if update.Message != nil {
 		if err != nil {
 			err = bot.SendStringMessageInChat("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
 			if err != nil {

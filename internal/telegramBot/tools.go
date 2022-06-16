@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository internal.UserRepositoryInterface) (*internal.User, error) {
-	user, err := repository.GetByChatId(tgChatId)
+func VerifyOrRegisterUser(tgUserInfo *TgBotApi.User, repository internal.UserRepositoryInterface) (*internal.User, error) {
+	user, err := repository.GetByChatId(tgUserInfo.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +19,7 @@ func VerifyOrRegisterUser(tgChatId int64, tgUserInfo *TgBotApi.User, repository 
 		FirstName:  tgUserInfo.FirstName,
 		LastName:   tgUserInfo.LastName,
 		TgUserName: tgUserInfo.UserName,
-		TgChatId:   tgChatId,
+		TgChatId:   tgUserInfo.ID,
 	}
 	user, err = repository.Add(user)
 	if err != nil {
