@@ -14,6 +14,7 @@ const (
 	randomQuestionCommand     = "question"
 	helpCommand               = "help"
 	startCommand              = "start"
+	changeCategoryCommand     = "changecategory"
 )
 
 var baseCategory = internal.Category{
@@ -28,7 +29,7 @@ type BotClient struct {
 	cancelFunc context.CancelFunc
 	wg         sync.WaitGroup
 
-	usersStates map[int64]userState
+	usersStates map[int64]*userState
 	statesMutex sync.Mutex
 	// TODO: встроить map[internal.User.Id]->*userState
 	// 	 Хватать Mutex в userState и отпускать через defer в начале обработки каждого Update
@@ -52,69 +53,73 @@ func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepos
 
 		userRepository:     userRepository,
 		questionRepository: questionRepository,
+
+		usersStates: map[int64]*userState{},
 	}, nil
 }
 
-func (bot *BotClient) Run() error {
-	if bot.cancelFunc != nil {
-		return errors.New("bot already running")
+func (botClient *BotClient) Run() error {
+	if botClient.cancelFunc != nil {
+		return errors.New("botClient already running")
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	bot.cancelFunc = cancelFunc
-	bot.wg = sync.WaitGroup{}
-	bot.wg.Add(1)
+	botClient.cancelFunc = cancelFunc
+	botClient.wg = sync.WaitGroup{}
+	botClient.wg.Add(1)
 	for {
 		select {
 		case <-ctx.Done():
 			break
-		case update := <-bot.updates:
-			bot.wg.Add(1)
-			go bot.handleUpdate(&update)
+		case update := <-botClient.updates:
+			botClient.wg.Add(1)
+			go botClient.handleUpdate(&update)
 			continue
 		}
 		break
 	}
-	bot.wg.Done()
+	botClient.wg.Done()
 	return nil
 }
 
-func (bot *BotClient) Shutdown() error {
-	if bot.cancelFunc == nil {
-		return errors.New("bot isn't running yet")
+func (botClient *BotClient) Shutdown() error {
+	if botClient.cancelFunc == nil {
+		return errors.New("botClient isn't running yet")
 	}
-	bot.cancelFunc()
-	bot.cancelFunc = nil
+	botClient.cancelFunc()
+	botClient.cancelFunc = nil
 
 	log.Print("Waiting for all processes..")
-	bot.wg.Wait()
+	botClient.wg.Wait()
 	return nil
 }
 
-func (bot *BotClient) handleUpdate(update *TgBotApi.Update) {
+func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
 
-	defer bot.wg.Done()
+	defer botClient.wg.Done()
 
-	user, err := VerifyOrRegisterUser(update.SentFrom(), bot.userRepository)
-	bot.statesMutex.Lock()
-	state, ok := bot.usersStates[user.TgChatId]
-	if ok && state.SequenceStep != NilStep {
-		state.mutex.Lock()
-		defer state.mutex.Unlock()
-		err = bot.ProcessUserStep(user, &state)
+	user, err := VerifyOrRegisterUser(update.SentFrom(), botClient.userRepository)
+	botClient.statesMutex.Lock()
+	userState, ok := botClient.usersStates[user.TgChatId]
+	if ok && userState.SequenceStep != NilStep {
+		userState.mutex.Lock()
+		defer userState.mutex.Unlock()
+		userState, err = botClient.ProcessUserStep(user, userState, update)
 		if err != nil {
 			log.Panic(err)
 		}
+		botClient.statesMutex.Unlock()
 		return
 	} else {
-		state = *NewUserState(baseCategory)
+		userState = NewUserState(baseCategory)
+		botClient.usersStates[user.TgChatId] = userState
 	}
-	bot.statesMutex.Unlock()
-	state.mutex.Lock()
-	defer state.mutex.Unlock()
+	botClient.statesMutex.Unlock()
+	userState.mutex.Lock()
+	defer userState.mutex.Unlock()
 
 	if update.Message != nil {
 		if err != nil {
-			err = bot.SendStringMessageInChat("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
+			err = botClient.SendStringMessageInChat("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
 			if err != nil {
 				log.Panic("Жопа наступила, не удалось получить или создать юзера,"+
 					" а потом еще и сообщение не отправилось", err)
@@ -123,17 +128,23 @@ func (bot *BotClient) handleUpdate(update *TgBotApi.Update) {
 
 		switch update.Message.Command() {
 		case startCommand:
-			err = bot.setCustomKeyboardToUser(user)
+			err = botClient.setCustomKeyboardToUser(user)
 			if err != nil {
 				log.Panic("Не удалось установить клавиатуру", err)
 			}
 		case helpCommand:
-			err = bot.SendStringMessageInChat("Это была команда /help", user.TgChatId)
+			err = botClient.SendStringMessageInChat("Это была команда /help", user.TgChatId)
 			if err != nil {
 				log.Panic("Не удалось отправить сообщение", err)
 			}
 		case randomQuestionCommand:
-			err = bot.SendRandomQuestionToUser(user)
+			err = botClient.SendRandomQuestionToUser(user)
+			if err != nil {
+				log.Panic(err)
+			}
+		case changeCategoryCommand:
+			userState.SequenceStep = ChangeCategoryInitStep
+			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
 				log.Panic(err)
 			}
@@ -141,7 +152,7 @@ func (bot *BotClient) handleUpdate(update *TgBotApi.Update) {
 
 		switch update.Message.Text {
 		case randomQuestionCommandText:
-			err = bot.SendRandomQuestionToUser(user)
+			err = botClient.SendRandomQuestionToUser(user)
 			if err != nil {
 				log.Panic(err)
 			}
