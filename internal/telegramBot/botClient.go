@@ -16,6 +16,11 @@ const (
 	startCommand              = "start"
 )
 
+var baseCategory = internal.Category{
+	Id:    1,
+	Title: "All",
+}
+
 type BotClient struct {
 	bot     *TgBotApi.BotAPI
 	updates TgBotApi.UpdatesChannel
@@ -24,6 +29,7 @@ type BotClient struct {
 	wg         sync.WaitGroup
 
 	usersStates map[int64]userState
+	statesMutex sync.Mutex
 	// TODO: встроить map[internal.User.Id]->*userState
 	// 	 Хватать Mutex в userState и отпускать через defer в начале обработки каждого Update
 	//	 Инициализировать запуск сценария с нужного шага при необходимости (скорее всего команда /newQuestion)
@@ -89,6 +95,7 @@ func (bot *BotClient) handleUpdate(update *TgBotApi.Update) {
 	defer bot.wg.Done()
 
 	user, err := VerifyOrRegisterUser(update.SentFrom(), bot.userRepository)
+	bot.statesMutex.Lock()
 	state, ok := bot.usersStates[user.TgChatId]
 	if ok && state.SequenceStep != NilStep {
 		state.mutex.Lock()
@@ -99,9 +106,9 @@ func (bot *BotClient) handleUpdate(update *TgBotApi.Update) {
 		}
 		return
 	} else {
-		// TODO:
-		//state = NewUserState()
+		state = *NewUserState(baseCategory)
 	}
+	bot.statesMutex.Unlock()
 	state.mutex.Lock()
 	defer state.mutex.Unlock()
 
