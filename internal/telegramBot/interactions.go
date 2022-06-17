@@ -28,8 +28,7 @@ type userState struct {
 	CurrentCategory internal.Category
 	SequenceStep    int
 
-	unfilledQuestion *internal.Question
-	unfilledCategory *internal.Category
+	unfilledNewQuestion *internal.Question
 
 	mutex sync.Mutex
 }
