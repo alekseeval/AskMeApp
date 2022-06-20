@@ -109,7 +109,7 @@ func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
 		}
 		botClient.statesMutex.Unlock()
 		return
-	} else {
+	} else if !ok {
 		userState = NewUserState(baseCategory)
 		botClient.usersStates[user.TgChatId] = userState
 	}
