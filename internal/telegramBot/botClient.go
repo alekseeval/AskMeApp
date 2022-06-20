@@ -100,16 +100,18 @@ func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
 	user, err := VerifyOrRegisterUser(update.SentFrom(), botClient.userRepository)
 	botClient.statesMutex.Lock()
 	userState, ok := botClient.usersStates[user.TgChatId]
-	if ok && userState.SequenceStep != NilStep {
-		userState.mutex.Lock()
-		defer userState.mutex.Unlock()
-		userState, err = botClient.ProcessUserStep(user, userState, update)
-		if err != nil {
-			log.Panic(err)
+	if ok {
+		if userState.SequenceStep != NilStep {
+			userState.mutex.Lock()
+			defer userState.mutex.Unlock()
+			userState, err = botClient.ProcessUserStep(user, userState, update)
+			if err != nil {
+				log.Panic(err)
+			}
+			botClient.statesMutex.Unlock()
+			return
 		}
-		botClient.statesMutex.Unlock()
-		return
-	} else if !ok {
+	} else {
 		userState = NewUserState(baseCategory)
 		botClient.usersStates[user.TgChatId] = userState
 	}
