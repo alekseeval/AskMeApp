@@ -2,104 +2,75 @@ package telegramBot
 
 import (
 	"AskMeApp/internal"
-	"fmt"
+	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"log"
-	"sort"
 )
 
-const (
-	OptimalSymbolsNumberInRow float32 = 36
-	maxButtonsInLineNumber    float32 = 4
-)
-
-func (bot *BotClient) SendStringMessageInChat(msgText string, chatId int64) error {
-	msg := tgbotapi.NewMessage(chatId, msgText)
-	_, err := bot.bot.Send(msg)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (bot *BotClient) SendAllCategoriesInline(messageExplanation string, categories []*internal.Category, chatId int64) error {
-	inlineButtons := formatCategoriesToInline(categories)
+func (botClient *BotClient) SendCategoriesToChooseInline(explanatoryMessage string, categories []*internal.Category, chatId int64) error {
+	inlineButtons := formatCategoriesToInlineButtons(categories)
 	inlineMarkup := tgbotapi.NewInlineKeyboardMarkup(inlineButtons...)
-	msg := tgbotapi.NewMessage(chatId, messageExplanation)
+	msg := tgbotapi.NewMessage(chatId, explanatoryMessage)
 	msg.ReplyMarkup = inlineMarkup
-	_, err := bot.bot.Send(msg)
+	_, err := botClient.botApi.Send(msg)
 	return err
 }
 
-func formatCategoriesToInline(categories []*internal.Category) [][]tgbotapi.InlineKeyboardButton {
-	categoriesCopy := append([]*internal.Category(nil), categories...)
-	sort.Slice(categoriesCopy, func(i, j int) bool {
-		return len(categoriesCopy[i].Title) < len(categoriesCopy[j].Title)
-	})
-
-	weights := make([]float32, 0)
-	for _, c := range categoriesCopy {
-		weight := OptimalSymbolsNumberInRow / float32(len(c.Title))
-		if weight > maxButtonsInLineNumber {
-			weight = maxButtonsInLineNumber
-		}
-		if weight == maxButtonsInLineNumber {
-			weight = maxButtonsInLineNumber
-		}
-		weights = append(weights, maxButtonsInLineNumber/weight)
-	}
-	log.Println(weights)
-
-	inlineButtons := make([][]tgbotapi.InlineKeyboardButton, 1)
-	var rowNumber int
-	var weightSum float32
-	for i, category := range categoriesCopy {
-		weightSum += weights[i]
-		if weightSum > maxButtonsInLineNumber {
-			newRow := make([]tgbotapi.InlineKeyboardButton, 0)
-			if len(inlineButtons[rowNumber]) == 0 {
-				inlineButtons[rowNumber] = append(inlineButtons[rowNumber], tgbotapi.NewInlineKeyboardButtonData(category.Title, fmt.Sprint(category.Id)))
-				inlineButtons = append(inlineButtons, newRow)
-				weightSum = 0
-			} else {
-				newRow = append(newRow, tgbotapi.NewInlineKeyboardButtonData(category.Title, fmt.Sprint(category.Id)))
-				inlineButtons = append(inlineButtons, newRow)
-				weightSum = weights[i]
-			}
-			rowNumber += 1
-		} else {
-			inlineButtons[rowNumber] = append(inlineButtons[rowNumber], tgbotapi.NewInlineKeyboardButtonData(category.Title, fmt.Sprint(category.Id)))
-		}
-	}
-	return inlineButtons
-}
-
-func (bot *BotClient) SendRandomQuestionToUser(user *internal.User) error {
-	allQuestions, err := bot.questionRepository.GetAllQuestions()
+func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error {
+	allQuestions, err := botClient.questionRepository.GetAllQuestions()
 	if err != nil {
 		return err
 	}
 	if len(allQuestions) == 0 {
-		err = bot.SendStringMessageInChat("На данный момент ваша База знаний пуста", user.TgChatId)
+		msg := tgbotapi.NewMessage(user.TgChatId, "На данный момент ваша База знаний пуста")
+		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	question := GetRandomQuestion(allQuestions)
 
-	msg := tgbotapi.NewMessage(user.TgChatId, "*Theme:* __"+question.Category.Title+
-		"__\n\n*Question:\n*_"+question.Title+"_")
+	currentUserState, ok := botClient.usersStates[user.TgChatId]
+	if !ok {
+		return errors.New("user have no current state")
+	}
+	requestedQuestions := make([]*internal.Question, 0)
+	for _, question := range allQuestions {
+		for _, category := range question.Categories {
+			if category.Id == currentUserState.CurrentCategory.Id {
+				requestedQuestions = append(requestedQuestions, question)
+				continue
+			}
+		}
+	}
+	if len(requestedQuestions) == 0 {
+		msg := tgbotapi.NewMessage(user.TgChatId, "На данный момент вопросы по категории __"+currentUserState.CurrentCategory.Title+"__ отсутствуют")
+		msg.ParseMode = "MarkdownV2"
+		_, err = botClient.botApi.Send(msg)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	question := GetRandomQuestion(requestedQuestions)
+	themesText := ""
+	for _, category := range question.Categories {
+		themesText += "\t__" + category.Title + "__"
+	}
+	msg := tgbotapi.NewMessage(user.TgChatId, themesText+
+		"\n\n*Question:\n*_"+question.Title+"_")
 	msg.ParseMode = "MarkdownV2"
-	_, err = bot.bot.Send(msg)
+	_, err = botClient.botApi.Send(msg)
 	return err
 }
 
-func (bot *BotClient) setCustomKeyboardToUser(user *internal.User) error {
-	keyBoardMarkup := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Gimme question"))
-	replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardMarkup)
-	msg := tgbotapi.NewMessage(user.TgChatId, "Welcome!")
+func (botClient *BotClient) setCustomKeyboardToChat(tgChatId int64) error {
+	keyBoardFirstRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
+	keyBoardSecondRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
+
+	replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardFirstRow, keyBoardSecondRow)
+	msg := tgbotapi.NewMessage(tgChatId, "Welcome!")
 	msg.ReplyMarkup = replyKeyboard
-	_, err := bot.bot.Send(msg)
+	_, err := botClient.botApi.Send(msg)
 	return err
 }

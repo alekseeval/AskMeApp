@@ -1,6 +1,6 @@
 package internal
 
-// UserRepositoryInterface is CRUD repository interface for models.User
+// UserRepositoryInterface is CRUD repository interface for internal.User
 type UserRepositoryInterface interface {
 	Add(user *User) (*User, error)
 	Delete(user *User) error
@@ -9,7 +9,7 @@ type UserRepositoryInterface interface {
 	GetByChatId(telegramChatId int64) (*User, error)
 }
 
-// QuestionsRepositoryInterface is CRUD repository interface for models.Question
+// QuestionsRepositoryInterface is CRUD repository interface for internal.Question
 type QuestionsRepositoryInterface interface {
 	AddQuestion(question *Question) (*Question, error)
 	DeleteQuestion(question *Question) error
@@ -19,7 +19,7 @@ type QuestionsRepositoryInterface interface {
 	CategoriesRepositoryInterface
 }
 
-// CategoriesRepositoryInterface is CRUD repository interface for models.Category
+// CategoriesRepositoryInterface is CRUD repository interface for internal.Category
 type CategoriesRepositoryInterface interface {
 	AddCategory(category *Category) (*Category, error)
 	DeleteCategory(category *Category) error

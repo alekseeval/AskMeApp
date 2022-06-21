@@ -20,6 +20,6 @@ type Question struct {
 	Title  string `json:"title"`
 	Answer string `json:"answer"`
 
-	Category *Category `json:"category"`
-	Author   *User     `json:"authorId"`
+	Categories []*Category `json:"categories"`
+	Author     *User       `json:"authorId"`
 }
