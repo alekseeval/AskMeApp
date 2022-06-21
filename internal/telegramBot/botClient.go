@@ -10,11 +10,13 @@ import (
 )
 
 const (
-	randomQuestionCommandText = "Gimme question"
-	randomQuestionCommand     = "question"
-	helpCommand               = "help"
-	startCommand              = "start"
-	changeCategoryCommand     = "changecategory"
+	randomQuestionCommand = "question"
+	helpCommand           = "help"
+	startCommand          = "start"
+	changeCategoryCommand = "changecategory"
+
+	randomQuestionCommandText = "❓Ask me"
+	changeCategoryCommandText = "🔄 Change questions category"
 )
 
 var baseCategory = internal.Category{
@@ -155,6 +157,12 @@ func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
 		switch update.Message.Text {
 		case randomQuestionCommandText:
 			err = botClient.SendRandomQuestionToUser(user)
+			if err != nil {
+				log.Panic(err)
+			}
+		case changeCategoryCommandText:
+			userState.SequenceStep = ChangeCategoryInitStep
+			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
 				log.Panic(err)
 			}

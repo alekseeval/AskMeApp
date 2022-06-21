@@ -122,8 +122,10 @@ func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error 
 }
 
 func (botClient *BotClient) setCustomKeyboardToUser(user *internal.User) error {
-	keyBoardMarkup := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Gimme question"))
-	replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardMarkup)
+	keyBoardFirstRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
+	keyBoardSecondRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
+
+	replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardFirstRow, keyBoardSecondRow)
 	msg := tgbotapi.NewMessage(user.TgChatId, "Welcome!")
 	msg.ReplyMarkup = replyKeyboard
 	_, err := botClient.bot.Send(msg)
