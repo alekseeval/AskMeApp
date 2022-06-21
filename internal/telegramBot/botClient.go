@@ -4,7 +4,7 @@ import (
 	"AskMeApp/internal"
 	"context"
 	"errors"
-	TgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"sync"
 )
@@ -25,32 +25,29 @@ var baseCategory = internal.Category{
 }
 
 type BotClient struct {
-	bot     *TgBotApi.BotAPI
-	updates TgBotApi.UpdatesChannel
+	botApi  *tgbotapi.BotAPI
+	updates tgbotapi.UpdatesChannel
 
 	cancelFunc context.CancelFunc
 	wg         sync.WaitGroup
 
 	usersStates map[int64]*userState
 	statesMutex sync.Mutex
-	// TODO: встроить map[internal.User.Id]->*userState
-	// 	 Хватать Mutex в userState и отпускать через defer в начале обработки каждого Update
-	//	 Инициализировать запуск сценария с нужного шага при необходимости (скорее всего команда /newQuestion)
 
 	userRepository     internal.UserRepositoryInterface
 	questionRepository internal.QuestionsRepositoryInterface
 }
 
 func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepository internal.QuestionsRepositoryInterface, botToken string) (*BotClient, error) {
-	bot, err := TgBotApi.NewBotAPI(botToken)
+	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		return nil, err
 	}
-	updatesConfig := TgBotApi.NewUpdate(0)
+	updatesConfig := tgbotapi.NewUpdate(0)
 	updatesConfig.Timeout = 60
 	updates := bot.GetUpdatesChan(updatesConfig)
 	return &BotClient{
-		bot:     bot,
+		botApi:  bot,
 		updates: updates,
 
 		userRepository:     userRepository,
@@ -95,11 +92,14 @@ func (botClient *BotClient) Shutdown() error {
 	return nil
 }
 
-func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
+func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 
 	defer botClient.wg.Done()
 
-	user, err := VerifyOrRegisterUser(update.SentFrom(), botClient.userRepository)
+	user, err := IdentifyOrRegisterUser(update.SentFrom(), botClient.userRepository)
+	if err != nil {
+		log.Panic("Что-то пошло не так во время авторизации пользователя", err)
+	}
 	botClient.statesMutex.Lock()
 	userState, ok := botClient.usersStates[user.TgChatId]
 	if ok {
@@ -108,7 +108,7 @@ func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
 			defer userState.mutex.Unlock()
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
-				log.Panic(err)
+				log.Panic("Что-то пошло не так при выполнении шага цепочки действий пользователя", err)
 			}
 			botClient.statesMutex.Unlock()
 			return
@@ -122,35 +122,29 @@ func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
 	defer userState.mutex.Unlock()
 
 	if update.Message != nil {
-		if err != nil {
-			err = botClient.SendStringMessageInChat("Что-то пошло не так во время авторизации: \n"+err.Error(), update.Message.Chat.ID)
-			if err != nil {
-				log.Panic("Жопа наступила, не удалось получить или создать юзера,"+
-					" а потом еще и сообщение не отправилось", err)
-			}
-		}
 
 		switch update.Message.Command() {
 		case startCommand:
-			err = botClient.setCustomKeyboardToUser(user)
+			err = botClient.setCustomKeyboardToChat(user.TgChatId)
 			if err != nil {
-				log.Panic("Не удалось установить клавиатуру", err)
+				log.Panic("Не удалось установить кастомную клавиатуру", err)
 			}
 		case helpCommand:
-			err = botClient.SendStringMessageInChat("Это была команда /help", user.TgChatId)
+			msg := tgbotapi.NewMessage(user.TgChatId, "Приложение все еще находится в разработке, поэтому описание не доступно. Ожидайте релиза в ближайшее время")
+			_, err = botClient.botApi.Send(msg)
 			if err != nil {
 				log.Panic("Не удалось отправить сообщение", err)
 			}
 		case randomQuestionCommand:
 			err = botClient.SendRandomQuestionToUser(user)
 			if err != nil {
-				log.Panic(err)
+				log.Panic("Что-то пошло не так при выдаче пользователю случайного вопроса", err)
 			}
 		case changeCategoryCommand:
 			userState.SequenceStep = ChangeCategoryInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
-				log.Panic(err)
+				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя", err)
 			}
 		}
 
@@ -158,13 +152,13 @@ func (botClient *BotClient) handleUpdate(update *TgBotApi.Update) {
 		case randomQuestionCommandText:
 			err = botClient.SendRandomQuestionToUser(user)
 			if err != nil {
-				log.Panic(err)
+				log.Panic("Что-то пошло не так при выдаче пользователю случайного вопроса", err)
 			}
 		case changeCategoryCommandText:
 			userState.SequenceStep = ChangeCategoryInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
-				log.Panic(err)
+				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя", err)
 			}
 		}
 	}

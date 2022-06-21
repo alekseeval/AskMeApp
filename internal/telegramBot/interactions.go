@@ -86,7 +86,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		userState.CurrentCategory = *category
 		msg := tgbotapi.NewMessage(user.TgChatId, "Категория успешна изменена на: __"+category.Title+"__")
 		msg.ParseMode = "MarkdownV2"
-		_, err = botClient.bot.Send(msg)
+		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
 		}
