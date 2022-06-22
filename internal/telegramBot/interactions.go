@@ -8,19 +8,19 @@ import (
 	"sync"
 )
 
-const NilStep int = 0
-const NumberOfScenarios = 2
+const nilStep int = 0
+const totalNumberOfScenarios = 2
 
 const (
 	// TODO: реализовать добавление задачи по шагам
-	NewQuestionEndStep int = iota*(NumberOfScenarios+1) + 1
-	NewQuestion2Step
-	NewQuestion3Step
-	NewQuestion4Step
+	newQuestionEndStep int = iota*(totalNumberOfScenarios+1) + 1
+	newQuestion2Step
+	newQuestion3Step
+	NewQuestionStartStep
 )
 
 const (
-	ChangeCategoryEndStep int = iota*(NumberOfScenarios+1) + 2
+	changeCategoryEndStep int = iota*(totalNumberOfScenarios+1) + 2
 	ChangeCategoryInitStep
 )
 
@@ -36,15 +36,15 @@ type userState struct {
 func NewUserState(currentCategory internal.Category) *userState {
 	return &userState{
 		CurrentCategory: currentCategory,
-		SequenceStep:    NilStep,
+		SequenceStep:    nilStep,
 		mutex:           sync.Mutex{},
 	}
 }
 
 func (state *userState) increaseStep() *userState {
-	state.SequenceStep -= NumberOfScenarios + 1
+	state.SequenceStep -= totalNumberOfScenarios + 1
 	if state.SequenceStep < 0 {
-		state.SequenceStep = NilStep
+		state.SequenceStep = nilStep
 	}
 	return state
 }
@@ -61,7 +61,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		if err != nil {
 			return userState, err
 		}
-	case ChangeCategoryEndStep:
+	case changeCategoryEndStep:
 		callbackData := update.CallbackData()
 		if callbackData == "" || callbackData[0] != 'c' {
 			allCategories, err := botClient.questionRepository.GetAllCategories()

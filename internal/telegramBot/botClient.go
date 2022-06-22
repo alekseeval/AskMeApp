@@ -14,9 +14,11 @@ const (
 	helpCommand           = "help"
 	startCommand          = "start"
 	changeCategoryCommand = "changecategory"
+	addQuestionCommand    = "newquestion"
 
 	randomQuestionCommandText = "❓Ask me"
 	changeCategoryCommandText = "🔄 Change questions category"
+	addQuestionCommandText    = "➕ Add new question"
 )
 
 var baseCategory = internal.Category{
@@ -98,17 +100,17 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 
 	user, err := IdentifyOrRegisterUser(update.SentFrom(), botClient.userRepository)
 	if err != nil {
-		log.Panic("Что-то пошло не так во время авторизации пользователя", err)
+		log.Panic("Что-то пошло не так во время авторизации пользователя: ", err)
 	}
 	botClient.statesMutex.Lock()
 	userState, ok := botClient.usersStates[user.TgChatId]
 	if ok {
-		if userState.SequenceStep != NilStep {
+		if userState.SequenceStep != nilStep {
 			userState.mutex.Lock()
 			defer userState.mutex.Unlock()
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
-				log.Panic("Что-то пошло не так при выполнении шага цепочки действий пользователя", err)
+				log.Panic("Что-то пошло не так при выполнении шага цепочки действий пользователя: ", err)
 			}
 			botClient.statesMutex.Unlock()
 			return
@@ -127,24 +129,30 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 		case startCommand:
 			err = botClient.setCustomKeyboardToChat(user.TgChatId)
 			if err != nil {
-				log.Panic("Не удалось установить кастомную клавиатуру", err)
+				log.Panic("Не удалось установить кастомную клавиатуру: ", err)
 			}
 		case helpCommand:
 			msg := tgbotapi.NewMessage(user.TgChatId, "Приложение все еще находится в разработке, поэтому описание не доступно. Ожидайте релиза в ближайшее время")
 			_, err = botClient.botApi.Send(msg)
 			if err != nil {
-				log.Panic("Не удалось отправить сообщение", err)
+				log.Panic("Не удалось отправить сообщение: ", err)
 			}
 		case randomQuestionCommand:
 			err = botClient.SendRandomQuestionToUser(user)
 			if err != nil {
-				log.Panic("Что-то пошло не так при выдаче пользователю случайного вопроса", err)
+				log.Panic("Что-то пошло не так при выдаче пользователю случайного вопроса: ", err)
 			}
 		case changeCategoryCommand:
 			userState.SequenceStep = ChangeCategoryInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
-				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя", err)
+				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя: ", err)
+			}
+		case addQuestionCommand:
+			userState.SequenceStep = NewQuestionStartStep
+			userState, err = botClient.ProcessUserStep(user, userState, update)
+			if err != nil {
+				log.Panic("Что-то пошло не так при вызове команды создания нового вопроса: ", err)
 			}
 		}
 
@@ -152,13 +160,19 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 		case randomQuestionCommandText:
 			err = botClient.SendRandomQuestionToUser(user)
 			if err != nil {
-				log.Panic("Что-то пошло не так при выдаче пользователю случайного вопроса", err)
+				log.Panic("Что-то пошло не так при выдаче пользователю случайного вопроса: ", err)
 			}
 		case changeCategoryCommandText:
 			userState.SequenceStep = ChangeCategoryInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
-				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя", err)
+				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя: ", err)
+			}
+		case addQuestionCommandText:
+			userState.SequenceStep = NewQuestionStartStep
+			userState, err = botClient.ProcessUserStep(user, userState, update)
+			if err != nil {
+				log.Panic("Что-то пошло не так при вызове команды создания нового вопроса: ", err)
 			}
 		}
 	}
