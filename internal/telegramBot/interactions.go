@@ -8,18 +8,28 @@ import (
 	"sync"
 )
 
-const nilStep int = 0
-const totalNumberOfScenarios = 2
-
+// nilStep 					- нулевой шаг последовательности, означает, что никакой последовательности не выполняется
+// totalNumberOfScenarios 	- кол-во сценариев бота
+// stepRange 				- расстояние между двумя шагами одной последовательности
 const (
-	newQuestionEndStep int = iota*(totalNumberOfScenarios+1) + 1
+	nilStep                int = 0
+	totalNumberOfScenarios int = 2
+	stepRange              int = totalNumberOfScenarios + 1 // 3
+)
+
+// Нумерация шагов последовательности действий по добавлению нового вопроса в базу знаний
+// NewQuestionStartStep - шаг начала последовательности
+const (
+	newQuestionEndStep int = iota*stepRange + 1
 	newQuestionAskCategoryStep
 	newQuestionAskAnswerStep
 	NewQuestionStartStep
 )
 
+// Нумерация шагов последовательности действий по смене категории вопросов
+// ChangeCategoryInitStep - шаг начала последовательности
 const (
-	changeCategoryEndStep int = iota*(totalNumberOfScenarios+1) + 2
+	changeCategoryEndStep int = iota*stepRange + 2
 	ChangeCategoryInitStep
 )
 
@@ -41,7 +51,7 @@ func NewUserState(currentCategory internal.Category) *userState {
 }
 
 func (state *userState) increaseStep() *userState {
-	state.SequenceStep -= totalNumberOfScenarios + 1
+	state.SequenceStep -= stepRange
 	if state.SequenceStep <= 0 {
 		state.SequenceStep = nilStep
 		state.unfilledNewQuestion = nil
@@ -75,7 +85,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			}
 			return userState, nil
 		}
-		categoryId, err := strconv.ParseInt(callbackData[1:len(callbackData)], 10, 32)
+		categoryId, err := strconv.ParseInt(callbackData[1:], 10, 32)
 		if err != nil {
 			return userState, nil
 		}
@@ -146,7 +156,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			}
 			return userState, nil
 		}
-		categoryId, err := strconv.ParseInt(callbackData[1:len(callbackData)], 10, 32)
+		categoryId, err := strconv.ParseInt(callbackData[1:], 10, 32)
 		if err != nil {
 			return userState, nil
 		}
