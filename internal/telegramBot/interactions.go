@@ -12,10 +12,9 @@ const nilStep int = 0
 const totalNumberOfScenarios = 2
 
 const (
-	// TODO: реализовать добавление задачи по шагам
 	newQuestionEndStep int = iota*(totalNumberOfScenarios+1) + 1
-	newQuestion2Step
-	newQuestion3Step
+	newQuestionAskCategoryStep
+	newQuestionAskAnswerStep
 	NewQuestionStartStep
 )
 
@@ -108,7 +107,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		userState.unfilledNewQuestion = &internal.Question{
 			Author: user,
 		}
-	case newQuestion3Step:
+	case newQuestionAskAnswerStep:
 		if update.Message.Text == "" {
 			return userState, errors.New("empty question title received")
 		}
@@ -119,7 +118,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		if err != nil {
 			return userState, err
 		}
-	case newQuestion2Step:
+	case newQuestionAskCategoryStep:
 		if update.Message.Text == "" {
 			return userState, errors.New("empty question title received")
 		}
