@@ -7,6 +7,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"sync"
+	"time"
 )
 
 const (
@@ -82,16 +83,24 @@ func (botClient *BotClient) Run() error {
 	return nil
 }
 
-func (botClient *BotClient) Shutdown() error {
+func (botClient *BotClient) Shutdown(timeout time.Duration) error {
 	if botClient.cancelFunc == nil {
 		return errors.New("botClient isn't running yet")
 	}
 	botClient.cancelFunc()
 	botClient.cancelFunc = nil
-
 	log.Print("Waiting for all processes..")
-	botClient.wg.Wait()
-	return nil
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		botClient.wg.Wait()
+	}()
+	select {
+	case <-c:
+		return nil
+	case <-time.After(timeout):
+		return errors.New("some of bot workers doesn't stopped")
+	}
 }
 
 func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
