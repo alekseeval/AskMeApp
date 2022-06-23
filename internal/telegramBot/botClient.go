@@ -136,7 +136,14 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 
 		switch update.Message.Command() {
 		case startCommand:
-			err = botClient.setCustomKeyboardToChat(user.TgChatId)
+			keyBoardFirstRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
+			keyBoardSecondRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
+			keyBoardThirdRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(addQuestionCommandText))
+
+			replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardFirstRow, keyBoardSecondRow, keyBoardThirdRow)
+			msg := tgbotapi.NewMessage(user.TgChatId, "Welcome to AskMeApp!")
+			msg.ReplyMarkup = replyKeyboard
+			_, err := botClient.botApi.Send(msg)
 			if err != nil {
 				log.Panic("Не удалось установить кастомную клавиатуру: ", err)
 			}
@@ -158,7 +165,7 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя: ", err)
 			}
 		case addQuestionCommand:
-			userState.SequenceStep = NewQuestionStartStep
+			userState.SequenceStep = NewQuestionInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
 				log.Panic("Что-то пошло не так при вызове команды создания нового вопроса: ", err)
@@ -178,7 +185,7 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя: ", err)
 			}
 		case addQuestionCommandText:
-			userState.SequenceStep = NewQuestionStartStep
+			userState.SequenceStep = NewQuestionInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
 				log.Panic("Что-то пошло не так при вызове команды создания нового вопроса: ", err)

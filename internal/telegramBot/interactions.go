@@ -18,12 +18,12 @@ const (
 )
 
 // Нумерация шагов последовательности действий по добавлению нового вопроса в базу знаний
-// NewQuestionStartStep - шаг начала последовательности
+// NewQuestionInitStep - шаг начала последовательности
 const (
 	newQuestionEndStep int = iota*stepRange + 1
 	newQuestionAskCategoryStep
 	newQuestionAskAnswerStep
-	NewQuestionStartStep
+	NewQuestionInitStep
 )
 
 // Нумерация шагов последовательности действий по смене категории вопросов
@@ -62,6 +62,7 @@ func (state *userState) increaseStep() *userState {
 func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *userState, update *tgbotapi.Update) (*userState, error) {
 	switch userState.SequenceStep {
 	case ChangeCategoryInitStep:
+		// TODO: дописать "❌ Cancel"
 		allCategories, err := botClient.questionRepository.GetAllCategories()
 		if err != nil {
 			return userState, err
@@ -107,7 +108,8 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			return userState, err
 		}
 
-	case NewQuestionStartStep:
+	case NewQuestionInitStep:
+		// TODO: дописать "❌ Cancel"
 		msg := tgbotapi.NewMessage(user.TgChatId, "Enter your question:")
 		msg.ParseMode = "MarkdownV2"
 		_, err := botClient.botApi.Send(msg)

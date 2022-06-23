@@ -70,15 +70,3 @@ func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error 
 	_, err = botClient.botApi.Send(msg)
 	return err
 }
-
-func (botClient *BotClient) setCustomKeyboardToChat(tgChatId int64) error {
-	keyBoardFirstRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
-	keyBoardSecondRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
-	keyBoardThirdRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(addQuestionCommandText))
-
-	replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardFirstRow, keyBoardSecondRow, keyBoardThirdRow)
-	msg := tgbotapi.NewMessage(tgChatId, "Welcome to AskMeApp!")
-	msg.ReplyMarkup = replyKeyboard
-	_, err := botClient.botApi.Send(msg)
-	return err
-}
