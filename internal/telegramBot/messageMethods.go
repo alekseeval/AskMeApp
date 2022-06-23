@@ -53,9 +53,16 @@ func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error 
 	}
 
 	question := GetRandomQuestion(requestedQuestions)
-	themesText := ""
-	for _, category := range question.Categories {
-		themesText += "\t__" + category.Title + "__"
+	themesText := "Category:  "
+	if len(question.Categories) == 1 {
+		themesText += "__" + question.Categories[0].Title + "__"
+	} else {
+		for _, category := range question.Categories {
+			if category.Id == baseCategory.Id {
+				continue
+			}
+			themesText += "__" + category.Title + "__  "
+		}
 	}
 	msg := tgbotapi.NewMessage(user.TgChatId, themesText+
 		"\n\n*Question:\n*_"+tgbotapi.EscapeText("MarkdownV2", question.Title)+"_")
