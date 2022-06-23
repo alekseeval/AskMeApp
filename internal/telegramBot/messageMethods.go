@@ -58,7 +58,7 @@ func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error 
 		themesText += "\t__" + category.Title + "__"
 	}
 	msg := tgbotapi.NewMessage(user.TgChatId, themesText+
-		"\n\n*Question:\n*_"+question.Title+"_")
+		"\n\n*Question:\n*_"+tgbotapi.EscapeText("MarkdownV2", question.Title)+"_")
 	msg.ParseMode = "MarkdownV2"
 	_, err = botClient.botApi.Send(msg)
 	return err
