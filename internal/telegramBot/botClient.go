@@ -7,6 +7,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"sync"
+	"time"
 )
 
 const (
@@ -16,9 +17,10 @@ const (
 	changeCategoryCommand = "changecategory"
 	addQuestionCommand    = "newquestion"
 
-	randomQuestionCommandText = "❓Ask me"
+	randomQuestionCommandText = "❔Ask me"
 	changeCategoryCommandText = "🔄 Change questions category"
 	addQuestionCommandText    = "➕ Add new question"
+	cancelAllStepsCommandText = "❌ Cancel"
 )
 
 var baseCategory = internal.Category{
@@ -48,6 +50,7 @@ func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepos
 	updatesConfig := tgbotapi.NewUpdate(0)
 	updatesConfig.Timeout = 60
 	updates := bot.GetUpdatesChan(updatesConfig)
+	updates.Clear()
 	return &BotClient{
 		botApi:  bot,
 		updates: updates,
@@ -82,16 +85,24 @@ func (botClient *BotClient) Run() error {
 	return nil
 }
 
-func (botClient *BotClient) Shutdown() error {
+func (botClient *BotClient) Shutdown(timeout time.Duration) error {
 	if botClient.cancelFunc == nil {
 		return errors.New("botClient isn't running yet")
 	}
 	botClient.cancelFunc()
 	botClient.cancelFunc = nil
-
 	log.Print("Waiting for all processes..")
-	botClient.wg.Wait()
-	return nil
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		botClient.wg.Wait()
+	}()
+	select {
+	case <-c:
+		return nil
+	case <-time.After(timeout):
+		return errors.New("some of bot workers doesn't stopped")
+	}
 }
 
 func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
@@ -127,9 +138,11 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 
 		switch update.Message.Command() {
 		case startCommand:
-			err = botClient.setCustomKeyboardToChat(user.TgChatId)
+			msg := tgbotapi.NewMessage(user.TgChatId, "Welcome to AskMeApp!")
+			msg.ReplyMarkup = MainKeyboard
+			_, err := botClient.botApi.Send(msg)
 			if err != nil {
-				log.Panic("Не удалось установить кастомную клавиатуру: ", err)
+				log.Panic("Не удалось установить кастомную клавиатуру после команды /start: ", err)
 			}
 		case helpCommand:
 			msg := tgbotapi.NewMessage(user.TgChatId, "Приложение все еще находится в разработке, поэтому описание не доступно. Ожидайте релиза в ближайшее время")
@@ -149,7 +162,7 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя: ", err)
 			}
 		case addQuestionCommand:
-			userState.SequenceStep = NewQuestionStartStep
+			userState.SequenceStep = NewQuestionInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
 				log.Panic("Что-то пошло не так при вызове команды создания нового вопроса: ", err)
@@ -169,7 +182,7 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 				log.Panic("Что-то пошло не так при вызове команды смены категории пользователя: ", err)
 			}
 		case addQuestionCommandText:
-			userState.SequenceStep = NewQuestionStartStep
+			userState.SequenceStep = NewQuestionInitStep
 			userState, err = botClient.ProcessUserStep(user, userState, update)
 			if err != nil {
 				log.Panic("Что-то пошло не так при вызове команды создания нового вопроса: ", err)

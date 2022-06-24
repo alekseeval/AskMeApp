@@ -8,18 +8,28 @@ import (
 	"sync"
 )
 
-const nilStep int = 0
-const totalNumberOfScenarios = 2
-
+// nilStep 					- нулевой шаг последовательности, означает, что никакой последовательности не выполняется
+// totalNumberOfScenarios 	- кол-во сценариев бота
+// stepRange 				- расстояние между двумя шагами одной последовательности
 const (
-	newQuestionEndStep int = iota*(totalNumberOfScenarios+1) + 1
-	newQuestionAskCategoryStep
-	newQuestionAskAnswerStep
-	NewQuestionStartStep
+	nilStep                int = 0
+	totalNumberOfScenarios int = 2
+	stepRange              int = totalNumberOfScenarios + 1 // 3
 )
 
+// Нумерация шагов последовательности действий по добавлению нового вопроса в базу знаний
+// NewQuestionInitStep - шаг начала последовательности
 const (
-	changeCategoryEndStep int = iota*(totalNumberOfScenarios+1) + 2
+	newQuestionEndStep int = iota*stepRange + 1
+	newQuestionAskCategoryStep
+	newQuestionAskAnswerStep
+	NewQuestionInitStep
+)
+
+// Нумерация шагов последовательности действий по смене категории вопросов
+// ChangeCategoryInitStep - шаг начала последовательности
+const (
+	changeCategoryEndStep int = iota*stepRange + 2
 	ChangeCategoryInitStep
 )
 
@@ -32,6 +42,8 @@ type userState struct {
 	mutex sync.Mutex
 }
 
+// NewUserState - метод-конструктор, возвращающий userState без начатой последовательности действий и
+//  с базовой категорией currentCategory в качестве текущей
 func NewUserState(currentCategory internal.Category) *userState {
 	return &userState{
 		CurrentCategory: currentCategory,
@@ -40,8 +52,9 @@ func NewUserState(currentCategory internal.Category) *userState {
 	}
 }
 
+// increaseStep - переводит последовательность действий на следующий шаг
 func (state *userState) increaseStep() *userState {
-	state.SequenceStep -= totalNumberOfScenarios + 1
+	state.SequenceStep -= stepRange
 	if state.SequenceStep <= 0 {
 		state.SequenceStep = nilStep
 		state.unfilledNewQuestion = nil
@@ -49,15 +62,37 @@ func (state *userState) increaseStep() *userState {
 	return state
 }
 
+// dropStepsProgress - обнуляет прогресс по текущей последовательности действий, без сохранения результата
+func (state *userState) dropStepsProgress() *userState {
+	state.SequenceStep = nilStep
+	state.unfilledNewQuestion = nil
+	return state
+}
+
 func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *userState, update *tgbotapi.Update) (*userState, error) {
+	if update.Message != nil && update.Message.Text == cancelAllStepsCommandText {
+		userState = userState.dropStepsProgress()
+		msg := tgbotapi.NewMessage(user.TgChatId, "Action cancelled")
+		msg.ReplyMarkup = MainKeyboard
+		_, err := botClient.botApi.Send(msg)
+		return userState, err
+	}
 	switch userState.SequenceStep {
 	case ChangeCategoryInitStep:
 		allCategories, err := botClient.questionRepository.GetAllCategories()
 		if err != nil {
 			return userState, err
 		}
-		err = botClient.SendCategoriesToChooseInline(
-			"Выберите желаемую категорию вопросов:", allCategories, user.TgChatId)
+		msg := tgbotapi.NewMessage(user.TgChatId, "Выберите желаемую категорию вопросов:")
+		msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+		_, err = botClient.botApi.Send(msg)
+		if err != nil {
+			return userState, err
+		}
+		msg.Text = "Now is __" + userState.CurrentCategory.Title + "__"
+		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = KeyboardWithCancel
+		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
 		}
@@ -68,14 +103,22 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			if err != nil {
 				return userState, err
 			}
-			err = botClient.SendCategoriesToChooseInline(
-				"Все-таки выберите желаемую категорию вопросов:", allCategories, user.TgChatId)
+			msg := tgbotapi.NewMessage(user.TgChatId, "Все-таки выберите желаемую категорию вопросов: ")
+			msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+			_, err = botClient.botApi.Send(msg)
+			if err != nil {
+				return userState, err
+			}
+			msg.Text = "Now is __" + userState.CurrentCategory.Title + "__"
+			msg.ParseMode = "MarkdownV2"
+			msg.ReplyMarkup = nil
+			_, err = botClient.botApi.Send(msg)
 			if err != nil {
 				return userState, err
 			}
 			return userState, nil
 		}
-		categoryId, err := strconv.ParseInt(callbackData[1:len(callbackData)], 10, 32)
+		categoryId, err := strconv.ParseInt(callbackData[1:], 10, 32)
 		if err != nil {
 			return userState, nil
 		}
@@ -92,14 +135,16 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 
 		msg := tgbotapi.NewMessage(user.TgChatId, "Категория успешна изменена на: __"+category.Title+"__")
 		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = MainKeyboard
 		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
 		}
 
-	case NewQuestionStartStep:
+	case NewQuestionInitStep:
 		msg := tgbotapi.NewMessage(user.TgChatId, "Enter your question:")
 		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = KeyboardWithCancel
 		_, err := botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
@@ -127,8 +172,9 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		if err != nil {
 			return userState, err
 		}
-		err = botClient.SendCategoriesToChooseInline(
-			"Choose category of your question:", allCategories, user.TgChatId)
+		msg := tgbotapi.NewMessage(user.TgChatId, "Choose category of your question:")
+		msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
 		}
@@ -139,14 +185,15 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			if err != nil {
 				return userState, err
 			}
-			err = botClient.SendCategoriesToChooseInline(
-				"Again. Choose category of your question:", allCategories, user.TgChatId)
+			msg := tgbotapi.NewMessage(user.TgChatId, "Again. Choose category of your question:")
+			msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+			_, err = botClient.botApi.Send(msg)
 			if err != nil {
 				return userState, err
 			}
 			return userState, nil
 		}
-		categoryId, err := strconv.ParseInt(callbackData[1:len(callbackData)], 10, 32)
+		categoryId, err := strconv.ParseInt(callbackData[1:], 10, 32)
 		if err != nil {
 			return userState, nil
 		}
@@ -166,6 +213,12 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Question successfully saved!")
 		if _, err := botClient.botApi.Request(callback); err != nil {
 			return nil, err
+		}
+		msg := tgbotapi.NewMessage(user.TgChatId, "Question successfully saved!")
+		msg.ReplyMarkup = MainKeyboard
+		_, err = botClient.botApi.Send(msg)
+		if err != nil {
+			return userState, err
 		}
 	default:
 		return userState, errors.New("unknown step")

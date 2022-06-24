@@ -14,6 +14,16 @@ const (
 	maxButtonsInLineNumber    float32 = 4
 )
 
+var (
+	randomizeButtonRow      = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
+	changeCategoryButtonRow = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
+	addQuestionButtonRow    = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(addQuestionCommandText))
+	cancelButtonRow         = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(cancelAllStepsCommandText))
+
+	MainKeyboard       = tgbotapi.NewReplyKeyboard(randomizeButtonRow, changeCategoryButtonRow, addQuestionButtonRow)
+	KeyboardWithCancel = tgbotapi.NewReplyKeyboard(cancelButtonRow)
+)
+
 func IdentifyOrRegisterUser(tgUserInfo *tgbotapi.User, repository internal.UserRepositoryInterface) (*internal.User, error) {
 	user, err := repository.GetByChatId(tgUserInfo.ID)
 	if err != nil {
@@ -44,7 +54,7 @@ func GetRandomQuestion(questions []*internal.Question) (question *internal.Quest
 }
 
 // TODO: требуется рефактор и переосмысливание
-func formatCategoriesToInlineButtons(categories []*internal.Category) [][]tgbotapi.InlineKeyboardButton {
+func formatCategoriesToInlineMarkup(categories []*internal.Category) tgbotapi.InlineKeyboardMarkup {
 	categoriesCopy := append([]*internal.Category(nil), categories...)
 	sort.Slice(categoriesCopy, func(i, j int) bool {
 		return len(categoriesCopy[i].Title) < len(categoriesCopy[j].Title)
@@ -83,5 +93,5 @@ func formatCategoriesToInlineButtons(categories []*internal.Category) [][]tgbota
 			inlineButtons[rowNumber] = append(inlineButtons[rowNumber], tgbotapi.NewInlineKeyboardButtonData(category.Title, "c"+fmt.Sprint(category.Id)))
 		}
 	}
-	return inlineButtons
+	return tgbotapi.NewInlineKeyboardMarkup(inlineButtons...)
 }

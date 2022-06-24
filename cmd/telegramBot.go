@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 const (
@@ -40,7 +41,7 @@ func main() {
 		}
 	}()
 	<-exitCh
-	err = botClient.Shutdown()
+	err = botClient.Shutdown(time.Second * 15)
 	if err != nil {
 		log.Panic("Не удалось завершить работу бота", err)
 	}

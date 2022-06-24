@@ -6,15 +6,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func (botClient *BotClient) SendCategoriesToChooseInline(explanatoryMessage string, categories []*internal.Category, chatId int64) error {
-	inlineButtons := formatCategoriesToInlineButtons(categories)
-	inlineMarkup := tgbotapi.NewInlineKeyboardMarkup(inlineButtons...)
-	msg := tgbotapi.NewMessage(chatId, explanatoryMessage)
-	msg.ReplyMarkup = inlineMarkup
-	_, err := botClient.botApi.Send(msg)
-	return err
-}
-
 func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error {
 	allQuestions, err := botClient.questionRepository.GetAllQuestions()
 	if err != nil {
@@ -53,25 +44,20 @@ func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error 
 	}
 
 	question := GetRandomQuestion(requestedQuestions)
-	themesText := ""
-	for _, category := range question.Categories {
-		themesText += "\t__" + category.Title + "__"
+	themesText := "Category:  "
+	if len(question.Categories) == 1 {
+		themesText += "__" + question.Categories[0].Title + "__"
+	} else {
+		for _, category := range question.Categories {
+			if category.Id == baseCategory.Id {
+				continue
+			}
+			themesText += "__" + category.Title + "__  "
+		}
 	}
 	msg := tgbotapi.NewMessage(user.TgChatId, themesText+
 		"\n\n*Question:\n*_"+tgbotapi.EscapeText("MarkdownV2", question.Title)+"_")
 	msg.ParseMode = "MarkdownV2"
 	_, err = botClient.botApi.Send(msg)
-	return err
-}
-
-func (botClient *BotClient) setCustomKeyboardToChat(tgChatId int64) error {
-	keyBoardFirstRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
-	keyBoardSecondRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
-	keyBoardThirdRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(addQuestionCommandText))
-
-	replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardFirstRow, keyBoardSecondRow, keyBoardThirdRow)
-	msg := tgbotapi.NewMessage(tgChatId, "Welcome to AskMeApp!")
-	msg.ReplyMarkup = replyKeyboard
-	_, err := botClient.botApi.Send(msg)
 	return err
 }
