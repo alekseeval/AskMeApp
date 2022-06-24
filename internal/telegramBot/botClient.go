@@ -50,6 +50,7 @@ func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepos
 	updatesConfig := tgbotapi.NewUpdate(0)
 	updatesConfig.Timeout = 60
 	updates := bot.GetUpdatesChan(updatesConfig)
+	updates.Clear()
 	return &BotClient{
 		botApi:  bot,
 		updates: updates,
