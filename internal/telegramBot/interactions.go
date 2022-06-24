@@ -83,13 +83,13 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		if err != nil {
 			return userState, err
 		}
-		msg := tgbotapi.NewMessage(user.TgChatId, "Выберите желаемую категорию вопросов:")
+		msg := tgbotapi.NewMessage(user.TgChatId, "Choose category:")
 		msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
 		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
 		}
-		msg.Text = "Now is __" + userState.CurrentCategory.Title + "__"
+		msg.Text = "Now selected category is __" + userState.CurrentCategory.Title + "__"
 		msg.ParseMode = "MarkdownV2"
 		msg.ReplyMarkup = KeyboardWithCancel
 		_, err = botClient.botApi.Send(msg)
@@ -103,13 +103,13 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			if err != nil {
 				return userState, err
 			}
-			msg := tgbotapi.NewMessage(user.TgChatId, "Все-таки выберите желаемую категорию вопросов: ")
+			msg := tgbotapi.NewMessage(user.TgChatId, "Try to choose category again: ")
 			msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
 			_, err = botClient.botApi.Send(msg)
 			if err != nil {
 				return userState, err
 			}
-			msg.Text = "Now is __" + userState.CurrentCategory.Title + "__"
+			msg.Text = "Now selected category is __" + userState.CurrentCategory.Title + "__"
 			msg.ParseMode = "MarkdownV2"
 			msg.ReplyMarkup = nil
 			_, err = botClient.botApi.Send(msg)
@@ -128,12 +128,12 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		}
 		userState.CurrentCategory = *category
 
-		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Категория успешно изменена")
+		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Successfully changed")
 		if _, err := botClient.botApi.Request(callback); err != nil {
 			return nil, err
 		}
 
-		msg := tgbotapi.NewMessage(user.TgChatId, "Категория успешна изменена на: __"+category.Title+"__")
+		msg := tgbotapi.NewMessage(user.TgChatId, "Category successfully changed on: __"+category.Title+"__")
 		msg.ParseMode = "MarkdownV2"
 		msg.ReplyMarkup = MainKeyboard
 		_, err = botClient.botApi.Send(msg)
@@ -153,8 +153,13 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			Author: user,
 		}
 	case newQuestionAskAnswerStep:
-		if update.Message.Text == "" {
-			return userState, errors.New("empty question title received")
+		if update.Message == nil || update.Message.Text == "" {
+			msg := tgbotapi.NewMessage(user.TgChatId, "Unsupported format\n\nPlease enter your question again:")
+			_, err := botClient.botApi.Send(msg)
+			if err != nil {
+				return userState, err
+			}
+			return userState, nil
 		}
 		userState.unfilledNewQuestion.Title = update.Message.Text
 		msg := tgbotapi.NewMessage(user.TgChatId, "Enter answer of your question:")
@@ -164,8 +169,13 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			return userState, err
 		}
 	case newQuestionAskCategoryStep:
-		if update.Message.Text == "" {
-			return userState, errors.New("empty question title received")
+		if update.Message == nil || update.Message.Text == "" {
+			msg := tgbotapi.NewMessage(user.TgChatId, "Unsupported format\n\nPlease enter answer to your question again:")
+			_, err := botClient.botApi.Send(msg)
+			if err != nil {
+				return userState, err
+			}
+			return userState, nil
 		}
 		userState.unfilledNewQuestion.Answer = update.Message.Text
 		allCategories, err := botClient.questionRepository.GetAllCategories()
@@ -185,7 +195,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			if err != nil {
 				return userState, err
 			}
-			msg := tgbotapi.NewMessage(user.TgChatId, "Again. Choose category of your question:")
+			msg := tgbotapi.NewMessage(user.TgChatId, "Unsupported format\n\nPlease choose category of your question again:")
 			msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
 			_, err = botClient.botApi.Send(msg)
 			if err != nil {
