@@ -123,6 +123,7 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 	botClient.statesMutex.Lock()
 	userState, ok := botClient.usersStates[user.TgChatId]
 	if ok {
+		botClient.statesMutex.Unlock()
 		if userState.SequenceStep != nilStep {
 			userState.mutex.Lock()
 			defer userState.mutex.Unlock()
@@ -130,14 +131,13 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 			if err != nil {
 				log.Panic("Что-то пошло не так при выполнении шага цепочки действий пользователя: ", err)
 			}
-			botClient.statesMutex.Unlock()
 			return
 		}
 	} else {
 		userState = NewUserState(baseCategory)
 		botClient.usersStates[user.TgChatId] = userState
+		botClient.statesMutex.Unlock()
 	}
-	botClient.statesMutex.Unlock()
 	userState.mutex.Lock()
 	defer userState.mutex.Unlock()
 
