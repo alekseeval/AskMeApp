@@ -18,7 +18,7 @@ const (
 	addQuestionCommand    = "newquestion"
 
 	randomQuestionCommandText = "❔Ask me"
-	changeCategoryCommandText = "🔄 Change questions category"
+	changeCategoryCommandText = "🔄 Select category"
 	addQuestionCommandText    = "➕ Add new question"
 	cancelAllStepsCommandText = "❌ Cancel"
 )
@@ -50,6 +50,13 @@ func NewBotClient(userRepository internal.UserRepositoryInterface, questionRepos
 	updatesConfig := tgbotapi.NewUpdate(0)
 	updatesConfig.Timeout = 60
 	updates := bot.GetUpdatesChan(updatesConfig)
+	select {
+	case <-updates:
+		break
+	case <-time.After(time.Second * 2):
+		break
+	}
+	log.Print("Connected to updates..")
 	updates.Clear()
 	return &BotClient{
 		botApi:  bot,
