@@ -79,13 +79,19 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 	}
 	switch userState.SequenceStep {
 	case ChangeCategoryInitStep:
-		// TODO: дописать "❌ Cancel"
 		allCategories, err := botClient.questionRepository.GetAllCategories()
 		if err != nil {
 			return userState, err
 		}
 		msg := tgbotapi.NewMessage(user.TgChatId, "Выберите желаемую категорию вопросов:")
 		msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+		_, err = botClient.botApi.Send(msg)
+		if err != nil {
+			return userState, err
+		}
+		msg.Text = "Now is __" + userState.CurrentCategory.Title + "__"
+		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = KeyboardWithCancel
 		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
@@ -99,6 +105,13 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			}
 			msg := tgbotapi.NewMessage(user.TgChatId, "Все-таки выберите желаемую категорию вопросов: ")
 			msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+			_, err = botClient.botApi.Send(msg)
+			if err != nil {
+				return userState, err
+			}
+			msg.Text = "Now is __" + userState.CurrentCategory.Title + "__"
+			msg.ParseMode = "MarkdownV2"
+			msg.ReplyMarkup = nil
 			_, err = botClient.botApi.Send(msg)
 			if err != nil {
 				return userState, err
@@ -129,9 +142,9 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		}
 
 	case NewQuestionInitStep:
-		// TODO: дописать "❌ Cancel"
 		msg := tgbotapi.NewMessage(user.TgChatId, "Enter your question:")
 		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = KeyboardWithCancel
 		_, err := botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err

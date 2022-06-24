@@ -17,7 +17,7 @@ const (
 	changeCategoryCommand = "changecategory"
 	addQuestionCommand    = "newquestion"
 
-	randomQuestionCommandText = "❓Ask me"
+	randomQuestionCommandText = "❔Ask me"
 	changeCategoryCommandText = "🔄 Change questions category"
 	addQuestionCommandText    = "➕ Add new question"
 	cancelAllStepsCommandText = "❌ Cancel"
