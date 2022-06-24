@@ -32,8 +32,8 @@ type BotClient struct {
 	botApi  *tgbotapi.BotAPI
 	updates tgbotapi.UpdatesChannel
 
-	cancelFunc context.CancelFunc
-	wg         sync.WaitGroup
+	cancelFunc        context.CancelFunc
+	routinesWaitGroup sync.WaitGroup
 
 	usersStates map[int64]*userState
 	statesMutex sync.Mutex
@@ -75,20 +75,20 @@ func (botClient *BotClient) Run() error {
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	botClient.cancelFunc = cancelFunc
-	botClient.wg = sync.WaitGroup{}
-	botClient.wg.Add(1)
+	botClient.routinesWaitGroup = sync.WaitGroup{}
+	botClient.routinesWaitGroup.Add(1)
 	for {
 		select {
 		case <-ctx.Done():
 			break
 		case update := <-botClient.updates:
-			botClient.wg.Add(1)
+			botClient.routinesWaitGroup.Add(1)
 			go botClient.handleUpdate(&update)
 			continue
 		}
 		break
 	}
-	botClient.wg.Done()
+	botClient.routinesWaitGroup.Done()
 	return nil
 }
 
@@ -102,7 +102,7 @@ func (botClient *BotClient) Shutdown(timeout time.Duration) error {
 	c := make(chan struct{})
 	go func() {
 		defer close(c)
-		botClient.wg.Wait()
+		botClient.routinesWaitGroup.Wait()
 	}()
 	select {
 	case <-c:
@@ -114,7 +114,7 @@ func (botClient *BotClient) Shutdown(timeout time.Duration) error {
 
 func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 
-	defer botClient.wg.Done()
+	defer botClient.routinesWaitGroup.Done()
 
 	user, err := IdentifyOrRegisterUser(update.SentFrom(), botClient.userRepository)
 	if err != nil {
