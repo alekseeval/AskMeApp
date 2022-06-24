@@ -42,6 +42,8 @@ type userState struct {
 	mutex sync.Mutex
 }
 
+// NewUserState - метод-конструктор, возвращающий userState без начатой последовательности действий и
+//  с базовой категорией currentCategory в качестве текущей
 func NewUserState(currentCategory internal.Category) *userState {
 	return &userState{
 		CurrentCategory: currentCategory,
@@ -50,6 +52,7 @@ func NewUserState(currentCategory internal.Category) *userState {
 	}
 }
 
+// increaseStep - переводит последовательность действий на следующий шаг
 func (state *userState) increaseStep() *userState {
 	state.SequenceStep -= stepRange
 	if state.SequenceStep <= 0 {
@@ -59,7 +62,21 @@ func (state *userState) increaseStep() *userState {
 	return state
 }
 
+// dropStepsProgress - обнуляет прогресс по текущей последовательности действий, без сохранения результата
+func (state *userState) dropStepsProgress() *userState {
+	state.SequenceStep = nilStep
+	state.unfilledNewQuestion = nil
+	return state
+}
+
 func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *userState, update *tgbotapi.Update) (*userState, error) {
+	if update.Message != nil && update.Message.Text == cancelAllStepsCommandText {
+		userState = userState.dropStepsProgress()
+		msg := tgbotapi.NewMessage(user.TgChatId, "Action cancelled")
+		msg.ReplyMarkup = MainKeyboard
+		_, err := botClient.botApi.Send(msg)
+		return userState, err
+	}
 	switch userState.SequenceStep {
 	case ChangeCategoryInitStep:
 		// TODO: дописать "❌ Cancel"

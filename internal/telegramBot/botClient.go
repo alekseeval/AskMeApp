@@ -20,6 +20,7 @@ const (
 	randomQuestionCommandText = "❓Ask me"
 	changeCategoryCommandText = "🔄 Change questions category"
 	addQuestionCommandText    = "➕ Add new question"
+	cancelAllStepsCommandText = "❌ Cancel"
 )
 
 var baseCategory = internal.Category{
@@ -136,16 +137,11 @@ func (botClient *BotClient) handleUpdate(update *tgbotapi.Update) {
 
 		switch update.Message.Command() {
 		case startCommand:
-			keyBoardFirstRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
-			keyBoardSecondRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
-			keyBoardThirdRow := tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(addQuestionCommandText))
-
-			replyKeyboard := tgbotapi.NewReplyKeyboard(keyBoardFirstRow, keyBoardSecondRow, keyBoardThirdRow)
 			msg := tgbotapi.NewMessage(user.TgChatId, "Welcome to AskMeApp!")
-			msg.ReplyMarkup = replyKeyboard
+			msg.ReplyMarkup = MainKeyboard
 			_, err := botClient.botApi.Send(msg)
 			if err != nil {
-				log.Panic("Не удалось установить кастомную клавиатуру: ", err)
+				log.Panic("Не удалось установить кастомную клавиатуру после команды /start: ", err)
 			}
 		case helpCommand:
 			msg := tgbotapi.NewMessage(user.TgChatId, "Приложение все еще находится в разработке, поэтому описание не доступно. Ожидайте релиза в ближайшее время")

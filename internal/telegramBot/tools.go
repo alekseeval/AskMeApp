@@ -14,6 +14,16 @@ const (
 	maxButtonsInLineNumber    float32 = 4
 )
 
+var (
+	randomizeButtonRow      = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(randomQuestionCommandText))
+	changeCategoryButtonRow = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(changeCategoryCommandText))
+	addQuestionButtonRow    = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(addQuestionCommandText))
+	cancelButtonRow         = tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(cancelAllStepsCommandText))
+
+	MainKeyboard       = tgbotapi.NewReplyKeyboard(randomizeButtonRow, changeCategoryButtonRow, addQuestionButtonRow)
+	KeyboardWithCancel = tgbotapi.NewReplyKeyboard(cancelButtonRow)
+)
+
 func IdentifyOrRegisterUser(tgUserInfo *tgbotapi.User, repository internal.UserRepositoryInterface) (*internal.User, error) {
 	user, err := repository.GetByChatId(tgUserInfo.ID)
 	if err != nil {
