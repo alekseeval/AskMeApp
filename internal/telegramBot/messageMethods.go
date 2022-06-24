@@ -6,15 +6,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func (botClient *BotClient) SendCategoriesToChooseInline(explanatoryMessage string, categories []*internal.Category, chatId int64) error {
-	inlineButtons := formatCategoriesToInlineButtons(categories)
-	inlineMarkup := tgbotapi.NewInlineKeyboardMarkup(inlineButtons...)
-	msg := tgbotapi.NewMessage(chatId, explanatoryMessage)
-	msg.ReplyMarkup = inlineMarkup
-	_, err := botClient.botApi.Send(msg)
-	return err
-}
-
 func (botClient *BotClient) SendRandomQuestionToUser(user *internal.User) error {
 	allQuestions, err := botClient.questionRepository.GetAllQuestions()
 	if err != nil {

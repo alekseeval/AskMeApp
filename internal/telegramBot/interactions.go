@@ -84,8 +84,9 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		if err != nil {
 			return userState, err
 		}
-		err = botClient.SendCategoriesToChooseInline(
-			"Выберите желаемую категорию вопросов:", allCategories, user.TgChatId)
+		msg := tgbotapi.NewMessage(user.TgChatId, "Выберите желаемую категорию вопросов:")
+		msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
 		}
@@ -96,8 +97,9 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			if err != nil {
 				return userState, err
 			}
-			err = botClient.SendCategoriesToChooseInline(
-				"Все-таки выберите желаемую категорию вопросов:", allCategories, user.TgChatId)
+			msg := tgbotapi.NewMessage(user.TgChatId, "Все-таки выберите желаемую категорию вопросов: ")
+			msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+			_, err = botClient.botApi.Send(msg)
 			if err != nil {
 				return userState, err
 			}
@@ -120,6 +122,7 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 
 		msg := tgbotapi.NewMessage(user.TgChatId, "Категория успешна изменена на: __"+category.Title+"__")
 		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = MainKeyboard
 		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
@@ -156,8 +159,9 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		if err != nil {
 			return userState, err
 		}
-		err = botClient.SendCategoriesToChooseInline(
-			"Choose category of your question:", allCategories, user.TgChatId)
+		msg := tgbotapi.NewMessage(user.TgChatId, "Choose category of your question:")
+		msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+		_, err = botClient.botApi.Send(msg)
 		if err != nil {
 			return userState, err
 		}
@@ -168,8 +172,9 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 			if err != nil {
 				return userState, err
 			}
-			err = botClient.SendCategoriesToChooseInline(
-				"Again. Choose category of your question:", allCategories, user.TgChatId)
+			msg := tgbotapi.NewMessage(user.TgChatId, "Again. Choose category of your question:")
+			msg.ReplyMarkup = formatCategoriesToInlineMarkup(allCategories)
+			_, err = botClient.botApi.Send(msg)
 			if err != nil {
 				return userState, err
 			}
@@ -195,6 +200,12 @@ func (botClient *BotClient) ProcessUserStep(user *internal.User, userState *user
 		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Question successfully saved!")
 		if _, err := botClient.botApi.Request(callback); err != nil {
 			return nil, err
+		}
+		msg := tgbotapi.NewMessage(user.TgChatId, "Question successfully saved!")
+		msg.ReplyMarkup = MainKeyboard
+		_, err = botClient.botApi.Send(msg)
+		if err != nil {
+			return userState, err
 		}
 	default:
 		return userState, errors.New("unknown step")
